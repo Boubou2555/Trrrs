@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import './task.css'
 
+// تعريف الدالة الخاصة بسكربت الإعلانات لتجنب خطأ TypeScript
+declare var show_10400479: any;
+
 export default function Page1({ user, setUser }: { user: any, setUser: any }) {
   const [adsCount, setAdsCount] = useState(0)
   const [giftCode, setGiftCode] = useState('')
@@ -11,9 +14,20 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
   const MAX_ADS = 3
 
   useEffect(() => {
-    if (user) setAdsCount(user.adsCount || 0)
+    if (user) {
+      // التحقق مما إذا كان اليوم جديداً لتصفير العداد في الواجهة
+      const lastDate = user.lastAdDate ? new Date(user.lastAdDate).toDateString() : null;
+      const today = new Date().toDateString();
+      
+      if (lastDate && lastDate !== today) {
+        setAdsCount(0);
+      } else {
+        setAdsCount(user.adsCount || 0);
+      }
+    }
   }, [user])
 
+  // دالة تفعيل كود الهدية
   const handleUseGiftCode = async () => {
     if (!giftCode.trim() || isLoading) return
     setIsLoading(true)
@@ -42,25 +56,46 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
     }
   }
 
+  // دالة مشاهدة الإعلان المحدثة
   const handleWatchAd = async () => {
     if (adsCount >= MAX_ADS || isLoading) return
-    setIsLoading(true)
-    try {
-      const res = await fetch('/api/increase-points', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: user.telegramId, action: 'watch_ad' }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setAdsCount(data.newCount)
-        setUser((prev: any) => ({ ...prev, points: data.points }))
-        setNotification('🎉 +1 XP')
-      }
-    } finally {
-      setIsLoading(false)
-      setTimeout(() => setNotification(''), 3000)
+    
+    // التأكد من أن سكربت الإعلانات محمل
+    if (typeof show_10400479 !== 'function') {
+      setNotification('❌ تعذر تحميل الإعلانات حالياً')
+      return
     }
+
+    setIsLoading(true)
+
+    // استدعاء نافذة الإعلان المنبثقة
+    show_10400479('pop').then(async () => {
+      // إذا شاهد المستخدم الإعلان بنجاح، نرسل للسيرفر لزيادة النقاط
+      try {
+        const res = await fetch('/api/increase-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramId: user.telegramId, action: 'watch_ad' }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setAdsCount(data.newCount)
+          setUser((prev: any) => ({ ...prev, points: data.points, adsCount: data.newCount }))
+          setNotification('🎉 حصلت على مكافأة المشاهدة!')
+        } else {
+          setNotification(`❌ ${data.message}`)
+        }
+      } catch (err) {
+        setNotification('❌ خطأ أثناء تحديث النقاط')
+      } finally {
+        setIsLoading(false)
+        setTimeout(() => setNotification(''), 3000)
+      }
+    }).catch((e: any) => {
+      setIsLoading(false)
+      setNotification('❌ فشل تشغيل الإعلان')
+      console.error(e)
+    })
   }
 
   return (
@@ -93,8 +128,12 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
         <div className="progress-bar-container">
           <div className="progress-bar-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
         </div>
-        <button onClick={handleWatchAd} disabled={adsCount >= MAX_ADS || isLoading} className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}>
-          {adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان (1 XP)'}
+        <button 
+          onClick={handleWatchAd} 
+          disabled={adsCount >= MAX_ADS || isLoading} 
+          className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
+        >
+          {adsCount >= MAX_ADS ? '✅ اكتملت المهام' : (isLoading ? 'جاري التحميل...' : '📺 شاهد إعلان (1 XP)')}
         </button>
       </div>
     </div>
