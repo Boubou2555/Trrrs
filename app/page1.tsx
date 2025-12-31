@@ -15,8 +15,10 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
   }, [user])
 
   const handleUseGiftCode = async () => {
-    if (!giftCode || isLoading) return
+    if (!giftCode.trim() || isLoading) return
     setIsLoading(true)
+    setNotification('')
+
     try {
       const res = await fetch('/api/increase-points', {
         method: 'POST',
@@ -24,15 +26,16 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
         body: JSON.stringify({ telegramId: user.telegramId, action: 'use_gift_code', code: giftCode }),
       })
       const data = await res.json()
+      
       if (data.success) {
         setUser((prev: any) => ({ ...prev, points: data.newPoints }))
         setNotification(`🎉 ${data.message}`)
         setGiftCode('')
       } else {
-        setNotification(`❌ ${data.message || 'كود غير صالح'}`)
+        setNotification(`❌ ${data.message || 'فشل تفعيل الكود'}`)
       }
     } catch (err) {
-      setNotification('❌ خطأ في الاتصال')
+      setNotification('❌ خطأ في السيرفر: تأكد من قاعدة البيانات')
     } finally {
       setIsLoading(false)
       setTimeout(() => setNotification(''), 3000)
@@ -52,7 +55,7 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
       if (data.success) {
         setAdsCount(data.newCount)
         setUser((prev: any) => ({ ...prev, points: data.points }))
-        setNotification('🎉 حصلت على 1 XP')
+        setNotification('🎉 +1 XP')
       }
     } finally {
       setIsLoading(false)
@@ -64,7 +67,6 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
     <div className="reward-container">
       <h1 className="reward-title">🎁 هدايا ومكافآت</h1>
 
-      {/* قسم كود الهدية - الحقل المطلوب */}
       <div className="reward-card gift-card">
         <h3 className="section-subtitle">هل لديك كود هدية؟</h3>
         <div className="gift-input-group">
@@ -91,7 +93,7 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
         <div className="progress-bar-container">
           <div className="progress-bar-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
         </div>
-        <button onClick={handleWatchAd} disabled={adsCount >= MAX_ADS || isLoading} className="claim-btn">
+        <button onClick={handleWatchAd} disabled={adsCount >= MAX_ADS || isLoading} className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}>
           {adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان (1 XP)'}
         </button>
       </div>
