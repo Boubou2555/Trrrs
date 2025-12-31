@@ -5,7 +5,7 @@ import './task.css'
 
 declare global {
   interface Window {
-    show_10400479?: (params: any) => Promise<void>;
+    show_10400479?: (params: any) => void;
   }
 }
 
@@ -40,7 +40,7 @@ export default function DailyReward() {
         setAdsCount(data.count || 0)
       }
     } catch (err) {
-      setError('فشل الاتصال بالسيرفر')
+      console.error('Fetch error')
     } finally {
       setIsLoading(false)
     }
@@ -50,53 +50,52 @@ export default function DailyReward() {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
     if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ الإعلانات قيد التحميل...');
+      setNotification('⚠️ جاري تجهيز الإعلان...');
       return;
     }
 
     setIsLoading(true);
 
-    // استخدام 'pop' لضمان عمل الـ .then() بعد الإغلاق
-    window.show_10400479('pop')
-      .then(async () => {
-        // يتم تنفيذ هذا الكود فقط بَعْدَ إغلاق الإعلان
-        try {
-          const res = await fetch('/api/increase-points', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              id: user.id, 
-              action: 'watch_ad' 
-            }),
-          });
-          
-          const data = await res.json();
-          if (data.success) {
-            setAdsCount(data.newCount);
-            setNotification('🎉 حصلت على 1 XP');
-            setTimeout(() => setNotification(''), 3000);
-          }
-        } catch (err) {
-          console.error("خطأ في تحديث النقاط");
-        } finally {
-          setIsLoading(false);
+    // 1. تشغيل الإعلان المدمج (In-App)
+    window.show_10400479({
+      type: 'inApp',
+      inAppSettings: {
+        frequency: 3,
+        capping: 0.1,
+        interval: 30, // يجب انتظار 30 ثانية بين الإعلانات
+        timeout: 0,
+        everyPage: false
+      }
+    });
+
+    // 2. تأخير منح المكافأة لمدة 5 ثوانٍ (ليشاهد المستخدم الإعلان أولاً)
+    setTimeout(async () => {
+      try {
+        const res = await fetch('/api/increase-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: user.id, action: 'watch_ad' }),
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          setAdsCount(data.newCount);
+          setNotification('🎉 حصلت على 1 XP');
+          setTimeout(() => setNotification(''), 3000);
         }
-      })
-      .catch(e => {
-        // في حال حدوث خطأ أو إغلاق الإعلان قبل البدء
-        console.error("Ad failed:", e);
+      } catch (err) {
+        console.error("Reward error");
+      } finally {
         setIsLoading(false);
-        setNotification('❌ تعذر إكمال الإعلان');
-      });
+      }
+    }, 5000); // تأخير 5 ثوانٍ
   };
 
   return (
     <div className="reward-container">
       <h1 className="reward-title">🎁 هدايا يومية</h1>
       <div className="reward-card">
-        <div className="ads-counter-info">
-          <span>التقدم: {adsCount} / {MAX_ADS}</span>
-        </div>
+        <div className="ads-counter-info"><span>التقدم: {adsCount} / {MAX_ADS}</span></div>
         <div className="progress-bar-container">
           <div className="progress-bar-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
         </div>
@@ -109,15 +108,12 @@ export default function DailyReward() {
         disabled={adsCount >= MAX_ADS || isLoading} 
         className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
       >
-        {isLoading ? 'جاري التحميل...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان (1 XP)'}
+        {isLoading ? 'جاري التحميل...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان مدمج'}
       </button>
-      
-      {/* ملاحظة للمستخدم بخصوص الفاصل الزمني */}
-      {adsCount < MAX_ADS && (
-        <p style={{fontSize: '10px', color: '#666', marginTop: '10px'}}>
-          ملاحظة: يجب الانتظار 30 ثانية بين كل إعلان.
-        </p>
-      )}
+
+      <p style={{fontSize: '11px', color: '#999', marginTop: '10px', textAlign: 'center'}}>
+        * يظهر الإعلان كل 30 ثانية. إذا لم يظهر، انتظر قليلاً ثم اضغط مجدداً.
+      </p>
     </div>
   )
 }
