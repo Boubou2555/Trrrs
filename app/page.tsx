@@ -22,7 +22,11 @@ type User = {
 }
 
 type Product = {
-  id: number; title: string; price: number; imageUrl: string; category: string;
+  id: number; 
+  title: string; 
+  price: number; 
+  imageUrl: string; 
+  category: string;
 }
 
 export default function Home() {
@@ -33,6 +37,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [isBanned, setIsBanned] = useState(false)
 
+  // 1. جلب بيانات المستخدم عند فتح التطبيق
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp
@@ -58,7 +63,13 @@ export default function Home() {
       
       if (data.status === 1) {
         setIsBanned(true)
-        setUser({ telegramId: tgUser.id, firstName: tgUser.first_name, points: data.points || 0, status: 1, banReason: data.banReason })
+        setUser({ 
+          telegramId: tgUser.id, 
+          firstName: tgUser.first_name, 
+          points: data.points || 0, 
+          status: 1, 
+          banReason: data.banReason 
+        })
         setLoading(false)
         return
       }
@@ -94,8 +105,7 @@ export default function Home() {
     if (!user || !tg) return
 
     if (user.points < product.price) {
-      // @ts-ignore
-      tg.showPopup({ title: 'رصيد غير كافٍ', message: `سعر المنتج ${product.price} XP ورصيدك ${user.points} XP.`, buttons: [{ type: 'ok' }] })
+      tg.showAlert(`❌ رصيدك غير كافٍ!\nسعر المنتج: ${product.price} XP\nرصيدك: ${user.points} XP`)
       return
     }
 
@@ -112,7 +122,7 @@ export default function Home() {
           if (data.success) {
             setUser(prev => prev ? { ...prev, points: data.newPoints } : null)
             tg.showAlert('✅ تم الخصم بنجاح! تواصل مع المدير الآن.', () => {
-              const msg = `طلب شراء مؤكد:\nالمنتج: ${product.title}\nالسعر: ${product.price} XP`
+              const msg = `طلب شراء مؤكد:\nالمنتج: ${product.title}\nالسعر: ${product.price} XP\nID: ${user.telegramId}`
               tg.openTelegramLink(`https://t.me/Kharwaydo?text=${encodeURIComponent(msg)}`)
             })
           } else {
@@ -127,24 +137,42 @@ export default function Home() {
 
   if (isBanned) return <div className="banned-container">🚫 أنت محظور: {user?.banReason}</div>
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>
+  if (error) return <div className="error-container">{error}</div>
 
   return (
     <div className="main-container">
+      {/* الهيدر: معلومات المستخدم */}
       <div className="user-header">
-        <img src={user?.photoUrl || '/default-avatar.png'} className="user-avatar" alt="profile" />
+        <img src={user?.photoUrl || 'https://via.placeholder.com/150'} className="user-avatar" alt="profile" />
         <div className="user-info">
           <h1 className="user-name">مرحباً، <span>{user?.firstName}</span>!</h1>
           <p className="user-username">@{user?.username || 'user'}</p>
         </div>
       </div>
+
+      {/* بطاقة الرصيد */}
       <div className="balance-card">
         <div className="balance-label">رصيدك الحالي</div>
         <div className="balance-amount">{user?.points.toLocaleString()} <span>XP</span></div>
       </div>
+
+      {/* التبديل بين التبويبات */}
       <div className="tabs-container">
-        <button className={`tab-button ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>المنتجات</button>
-        <button className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>الهدية اليومية</button>
+        <button 
+          className={`tab-button ${activeTab === 'products' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('products')}
+        >
+          المتجر
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('tasks')}
+        >
+          الهدايا
+        </button>
       </div>
+
+      {/* محتوى الصفحة بناءً على التبويب النشط */}
       {activeTab === 'products' ? (
         <div className="products-grid">
           {products.map(product => (
@@ -153,11 +181,18 @@ export default function Home() {
                 <img src={product.imageUrl} alt={product.title} className="product-image" />
                 <div className="product-badge">{product.category}</div>
               </div>
-              <div className="product-info"><h3 className="product-title">{product.title}</h3><div className="product-price">{product.price} XP</div></div>
+              <div className="product-info">
+                <h3 className="product-title">{product.title}</h3>
+                <div className="product-price">{product.price} XP</div>
+              </div>
             </div>
           ))}
         </div>
-      ) : ( <Page1 /> )}
+      ) : ( 
+        /* نمرر الـ user والـ setUser لكي يتمكن ملف Page1 من تحديث الرصيد هنا */
+        <Page1 user={user} setUser={setUser} /> 
+      )}
+
       <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
