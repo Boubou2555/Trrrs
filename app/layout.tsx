@@ -18,7 +18,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* سكربت تليجرام الأساسي */}
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        
+        {/* سكربت Monetag - تأكد من الرابط الخاص بك من لوحة التحكم */}
+        <Script 
+          src="https://alwingulla.com/88/p.js" 
+          data-ghi="10400479" 
+          strategy="lazyOnload" // لضمان عدم تأخير تحميل التطبيق
+        />
+        
         {children}
       </body>
     </html>
