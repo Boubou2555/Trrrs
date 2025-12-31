@@ -1,76 +1,67 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function POST(req: NextRequest) {
-    try {
-        const body = await req.json()
+const MAX_ADS = 3;
 
-        // 1. التحقق من وجود المعرف الأساسي (Telegram ID)
-        const telegramId = Number(body.telegramId || body.id)
-        if (!telegramId) {
-            return NextResponse.json({ error: 'بيانات المستخدم غير صالحة' }, { status: 400 })
-        }
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const telegramId = Number(searchParams.get('telegramId'))
+  if (!telegramId) return NextResponse.json({ error: 'ID مطلوب' }, { status: 400 })
 
-        // --- وظيفة: تفعيل كود الهدية ---
-        if (body.action === 'use_gift_code') {
-            const codeInput = parseInt(body.code)
+  try {
+    const user = await prisma.user.findUnique({ where: { telegramId } })
+    if (!user) return NextResponse.json({ error: 'غير موجود' }, { status: 404 })
 
-            if (isNaN(codeInput)) {
-                return NextResponse.json({ success: false, message: 'يرجى إدخال أرقام فقط' })
-            }
+    const now = new Date()
+    const lastAdDate = user.lastAdDate ? new Date(user.lastAdDate) : new Date(0)
+    const isNewDay = now.toDateString() !== lastAdDate.toDateString()
+    const currentCount = isNewDay ? 0 : (user.adsCount || 0)
 
-            const gift = await prisma.giftCode.findUnique({
-                where: { code: codeInput }
-            })
+    return NextResponse.json({ success: true, count: currentCount, points: user.points })
+  } catch (error) {
+    return NextResponse.json({ error: 'خطأ خادم' }, { status: 500 })
+  }
+}
 
-            if (!gift) {
-                return NextResponse.json({ success: false, message: 'كود رقمي غير صحيح' })
-            }
+export async function POST(req: Request) {
+  try {
+    const body = await req.json()
+    const telegramId = Number(body.telegramId || body.id)
 
-            if (gift.currentUses >= gift.maxUses) {
-                return NextResponse.json({ success: false, message: 'انتهى حد استخدام الكود' })
-            }
+    const user = await prisma.user.upsert({
+      where: { telegramId },
+      update: { username: body.username, firstName: body.first_name || body.firstName },
+      create: { telegramId, username: body.username, firstName: body.first_name || body.firstName, points: 0, adsCount: 0, status: 0 }
+    })
 
-            const updatedUser = await prisma.user.update({
-                where: { telegramId },
-                data: { points: { increment: gift.points } }
-            })
+    if (user.status === 1) return NextResponse.json({ error: 'محظور', status: 1 }, { status: 403 })
 
-            await prisma.giftCode.update({
-                where: { code: codeInput },
-                data: { currentUses: { increment: 1 } }
-            }).catch(() => console.log("خطأ بسيط في تحديث الكود"))
+    if (body.action === 'watch_ad') {
+      const now = new Date();
+      const lastAdDate = user.lastAdDate ? new Date(user.lastAdDate) : new Date(0);
+      const isNewDay = now.toDateString() !== lastAdDate.toDateString();
+      let currentCount = isNewDay ? 0 : (user.adsCount || 0);
 
-            return NextResponse.json({ 
-                success: true, 
-                newPoints: updatedUser.points, 
-                message: `مبروك! حصلت على ${gift.points} XP` 
-            })
-        }
+      if (currentCount >= MAX_ADS) return NextResponse.json({ success: false, message: 'انتهت المحاولات' });
 
-        // --- وظيفة: مكافأة مشاهدة الإعلان ---
-        if (body.action === 'watch_ad') {
-            const MAX_ADS = 3;
-            const now = new Date();
+      const updated = await prisma.user.update({
+        where: { telegramId },
+        data: { points: { increment: 1 }, adsCount: currentCount + 1, lastAdDate: now }
+      })
+      return NextResponse.json({ success: true, newCount: updated.adsCount, points: updated.points })
+    }
 
-            const currentUser = await prisma.user.findUnique({
-                where: { telegramId }
-            });
+    if (body.action === 'purchase_product') {
+      if (user.points < body.price) return NextResponse.json({ success: false, message: 'رصيد غير كافٍ' }, { status: 400 });
+      const updated = await prisma.user.update({
+        where: { telegramId },
+        data: { points: { decrement: body.price } }
+      })
+      return NextResponse.json({ success: true, newPoints: updated.points })
+    }
 
-            if (!currentUser) {
-                return NextResponse.json({ success: false, message: 'المستخدم غير موجود' });
-            }
-
-            // التحقق هل نحن في يوم جديد لتصفير العداد؟
-            const isNewDay = now.toDateString() !== new Date(currentUser.lastAdDate).toDateString();
-            
-            let currentCount = isNewDay ? 0 : currentUser.adsCount;
-
-            if (currentCount >= MAX_ADS) {
-                return NextResponse.json({ success: false, message: 'لقد استنفدت محاولات اليوم، عد غداً' });
-            }
-
-            const updatedUser = await prisma.user.update({
-                where: { telegramId },
-                data: { 
-                    points: { increment: 1 },
+    return NextResponse.json(user)
+  } catch (e) {
+    return NextResponse.json({ error: 'خطأ داخلي' }, { status: 500 })
+  }
+}
