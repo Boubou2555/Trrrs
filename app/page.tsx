@@ -32,6 +32,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'products' | 'tasks'>('products')
   const [loading, setLoading] = useState(true)
   const [isBanned, setIsBanned] = useState(false)
+  
+  // حالات خاصة بإدخال الكود
+  const [giftCode, setGiftCode] = useState('')
+  const [redeemLoading, setRedeemLoading] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
@@ -89,12 +93,42 @@ export default function Home() {
     setLoading(false)
   }
 
+  const handleRedeemCode = async () => {
+    if (!giftCode.trim() || !user) return
+    setRedeemLoading(true)
+    const tg = window.Telegram?.WebApp
+
+    try {
+      const res = await fetch('/api/increase-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          telegramId: user.telegramId, 
+          action: 'redeem_code', 
+          code: giftCode 
+        }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        setUser(prev => prev ? { ...prev, points: data.points } : null)
+        tg?.showAlert(data.message)
+        setGiftCode('')
+      } else {
+        tg?.showAlert(data.message || 'الكود غير صحيح')
+      }
+    } catch (e) {
+      tg?.showAlert('❌ حدث خطأ في الاتصال')
+    } finally {
+      setRedeemLoading(false)
+    }
+  }
+
   const handlePurchase = async (product: Product) => {
     const tg = window.Telegram?.WebApp
     if (!user || !tg) return
 
     if (user.points < product.price) {
-      // @ts-ignore
       tg.showPopup({ title: 'رصيد غير كافٍ', message: `سعر المنتج ${product.price} XP ورصيدك ${user.points} XP.`, buttons: [{ type: 'ok' }] })
       return
     }
@@ -131,20 +165,23 @@ export default function Home() {
   return (
     <div className="main-container">
       <div className="user-header">
-        <img src={user?.photoUrl || '/default-avatar.png'} className="user-avatar" alt="profile" />
+        <img src={user?.photoUrl || 'https://via.placeholder.com/100'} className="user-avatar" alt="profile" />
         <div className="user-info">
           <h1 className="user-name">مرحباً، <span>{user?.firstName}</span>!</h1>
           <p className="user-username">@{user?.username || 'user'}</p>
         </div>
       </div>
+
       <div className="balance-card">
         <div className="balance-label">رصيدك الحالي</div>
         <div className="balance-amount">{user?.points.toLocaleString()} <span>XP</span></div>
       </div>
+
       <div className="tabs-container">
         <button className={`tab-button ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>المنتجات</button>
-        <button className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>الهدية اليومية</button>
+        <button className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>الهدايا</button>
       </div>
+
       {activeTab === 'products' ? (
         <div className="products-grid">
           {products.map(product => (
@@ -153,11 +190,34 @@ export default function Home() {
                 <img src={product.imageUrl} alt={product.title} className="product-image" />
                 <div className="product-badge">{product.category}</div>
               </div>
-              <div className="product-info"><h3 className="product-title">{product.title}</h3><div className="product-price">{product.price} XP</div></div>
+              <div className="product-info">
+                <h3 className="product-title">{product.title}</h3>
+                <div className="product-price">{product.price} XP</div>
+              </div>
             </div>
           ))}
         </div>
-      ) : ( <Page1 /> )}
+      ) : ( 
+        <div className="tasks-content">
+          {/* قسم إدخال الكود الجديد */}
+          <div className="redeem-section">
+            <h3>🎁 شحن كود هدية</h3>
+            <div className="redeem-input-group">
+              <input 
+                type="text" 
+                placeholder="أدخل الكود هنا..." 
+                value={giftCode}
+                onChange={(e) => setGiftCode(e.target.value)}
+              />
+              <button onClick={handleRedeemCode} disabled={redeemLoading}>
+                {redeemLoading ? '...' : 'شحن'}
+              </button>
+            </div>
+          </div>
+          <Page1 /> 
+        </div>
+      )}
+      
       <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
