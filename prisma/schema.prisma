@@ -1,1 +1,24 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
 
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId Int      @unique
+  username   String?
+  firstName  String?
+  lastName   String?
+  points     Int      @default(0)
+  status     Int      @default(0)  // 0 = غير محظور، 1 = محظور
+  banReason  String?  
+  photoUrl   String?
+  adsCount   Int      @default(0)    // عدد الإعلانات المشاهدة اليوم
+  lastAdDate DateTime @default(now()) // تاريخ آخر إعلان لتصفير العداد
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
