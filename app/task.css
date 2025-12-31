@@ -1,5 +1,5 @@
-.reward-container { padding: 10px; text-align: center; }
-.reward-title { font-size: 1.5rem; margin-bottom: 20px; color: #f5f6fa; }
+.reward-container { padding: 15px; text-align: center; }
+.reward-title { font-size: 1.6rem; margin-bottom: 25px; color: white; }
 
 .reward-card {
   background: rgba(255, 255, 255, 0.05);
@@ -9,33 +9,28 @@
   margin-bottom: 20px;
 }
 
-/* تنسيق حقل الكود */
 .gift-card { background: rgba(108, 92, 231, 0.1) !important; border: 1px dashed #6c5ce7 !important; }
-.section-subtitle { font-size: 0.9rem; margin-bottom: 12px; color: #a29bfe; }
+.section-subtitle { font-size: 0.9rem; margin-bottom: 15px; color: #a29bfe; }
 .gift-input-group { display: flex; gap: 10px; }
 .gift-input {
-  flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #333;
-  background: rgba(0,0,0,0.3); color: white; outline: none;
+  flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #333;
+  background: rgba(0,0,0,0.5); color: white; outline: none; text-align: center;
 }
 .gift-submit-btn {
-  padding: 0 20px; border-radius: 10px; border: none;
+  padding: 0 20px; border-radius: 12px; border: none;
   background: #6c5ce7; color: white; font-weight: bold; cursor: pointer;
 }
 
-/* التنبيهات */
 .notification-toast {
-  background: #00b894; color: white; padding: 10px; border-radius: 8px;
-  margin-bottom: 15px; animation: fadeIn 0.3s;
+  background: #00b894; color: white; padding: 12px; border-radius: 10px;
+  margin-bottom: 20px; font-weight: bold;
 }
 
-/* عداد الإعلانات */
-.ads-counter-info { display: flex; justify-content: space-between; margin-bottom: 10px; color: #a29bfe; }
-.progress-bar-container { width: 100%; height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
-.progress-bar-fill { height: 100%; background: #f1c40f; transition: width 0.5s; }
+.ads-counter-info { display: flex; justify-content: space-between; margin-bottom: 12px; color: #a29bfe; }
+.progress-bar-container { width: 100%; height: 12px; background: #2d3436; border-radius: 6px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, #6c5ce7, #a29bfe); transition: width 0.5s; }
 .claim-btn {
   width: 100%; padding: 15px; border-radius: 12px; border: none;
-  background: #f1c40f; color: #1a1a1a; font-weight: bold; margin-top: 15px;
+  background: #f1c40f; color: #1a1a1a; font-weight: 800; margin-top: 15px;
 }
-.claim-btn.disabled { background: #444; color: #888; }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.claim-btn.disabled { background: #353b48; color: #7f8c8d; }
