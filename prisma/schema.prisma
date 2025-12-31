@@ -24,10 +24,10 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
-// نموذج أكواد الهدايا (الجديد)
+// نموذج أكواد الهدايا (المعدل إلى رقم Int)
 model GiftCode {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  code         String   @unique          // الكود الذي يكتبه المستخدم (مثال: FREE100)
+  code         Int      @unique          // تم التغيير من String إلى Int لقطع الشك في المسافات
   points       Int                       // عدد النقاط التي يمنحها الكود
   maxUses      Int      @default(1)      // أقصى عدد مرات استخدام للكود
   currentUses  Int      @default(0)      // عدد المرات التي استُخدم فيها الكود فعلياً
