@@ -8,43 +8,44 @@ export async function POST(req: Request) {
 
     if (!telegramId) return NextResponse.json({ success: false, message: 'ID missing' })
 
-    // --- منطق كود الهدية (نسخة مطابقة لآلية الإعلان) ---
+    // --- منطق كود الهدية (مطابق تماماً لآلية الإعلان الناجحة عندك) ---
     if (body.action === 'use_gift_code') {
-      const codeInput = body.code?.trim()
+      const codeInput = body.code?.trim() // تنظيف الكود المدخل من المسافات
       
-      // 1. البحث عن الكود (قراءة فقط)
-      const gift = await prisma.giftCode.findUnique({ 
-        where: { code: codeInput } 
+      // البحث عن الكود
+      const gift = await prisma.giftCode.findFirst({ 
+        where: { 
+          code: {
+            contains: codeInput, // استخدام contains لتجنب مشاكل المسافات الزائدة في قاعدة البيانات
+            mode: 'insensitive'
+          }
+        } 
       })
       
       if (!gift) return NextResponse.json({ success: false, message: 'هذا الكود غير صحيح' })
 
-      // 2. إضافة النقاط (استخدام نفس أسلوب تحديث الإعلانات تماماً)
-      const reward = Number(gift.points) || 0
-      
+      // إضافة النقاط (نفس السطر الذي نجح في الإعلانات)
       const updatedUser = await prisma.user.update({
         where: { telegramId },
         data: { 
-          points: { increment: reward } // نفس السطر المستخدم في الإعلانات
+          points: { increment: gift.points } 
         }
       })
 
-      // 3. تحديث الكود (اختياري، نضعه في try منفصل لضمان عدم توقف العملية)
-      try {
-        await prisma.giftCode.update({
-          where: { code: codeInput },
-          data: { currentUses: { increment: 1 } }
-        })
-      } catch (e) { console.log("تحديث الكود فشل لكن النقاط أضيفت") }
+      // محاولة تحديث عداد الكود في الخلفية (حتى لو فشلت لن تتوقف العملية)
+      prisma.giftCode.update({
+        where: { id: gift.id },
+        data: { currentUses: { increment: 1 } }
+      }).catch(e => console.log("Update gift uses failed, but points added."))
 
       return NextResponse.json({ 
         success: true, 
         newPoints: updatedUser.points, 
-        message: `تمت الإضافة بنجاح! +${reward} XP` 
+        message: `تم تفعيل الهدية! +${gift.points} XP` 
       })
     }
 
-    // --- منطق الإعلانات (الذي يعمل عندك بنجاح) ---
+    // --- منطق الإعلانات (الذي يعمل بنجاح كما في صورتك) ---
     if (body.action === 'watch_ad') {
       const updated = await prisma.user.update({
         where: { telegramId },
@@ -57,28 +58,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, points: updated.points, newCount: updated.adsCount })
     }
 
-    // الدخول العادي وتحديث البيانات
+    // تسجيل الدخول العادي
     const user = await prisma.user.upsert({
       where: { telegramId },
-      update: { 
-        username: body.username, 
-        firstName: body.first_name || body.firstName 
-      },
-      create: { 
-        telegramId, 
-        username: body.username, 
-        firstName: body.first_name || body.firstName, 
-        points: 0 
-      }
+      update: { username: body.username, firstName: body.first_name || body.firstName },
+      create: { telegramId, username: body.username, firstName: body.first_name || body.firstName, points: 0 }
     })
-    
     return NextResponse.json(user)
 
   } catch (error) {
     console.error("API Error:", error)
-    return NextResponse.json({ 
-      success: false, 
-      message: 'خطأ في العملية - تأكد من بيانات الكود في MongoDB' 
-    }, { status: 500 })
+    return NextResponse.json({ success: false, message: 'خطأ في العملية: تأكد من بيانات الكود' }, { status: 500 })
   }
 }
