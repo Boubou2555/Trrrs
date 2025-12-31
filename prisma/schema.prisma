@@ -7,29 +7,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// نموذج المستخدمين
 model User {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  telegramId   Int      @unique
-  username     String?
-  firstName    String?
-  lastName     String?
-  points       Int      @default(0)
-  status       Int      @default(0)  // 0 = نشط، 1 = محظور
-  banReason    String?  
-  photoUrl     String?
-  adsCount     Int      @default(0)    // عدد الإعلانات المشاهدة اليوم
-  lastAdDate   DateTime @default(now()) // تاريخ آخر إعلان لتصفير العداد يومياً
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-// نموذج أكواد الهدايا
-model GiftCode {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  code         Int      @unique          // الكود كرقم
-  points       Int                       // النقاط الممنوحة
-  maxUses      Int      @default(1)      // أقصى عدد مرات استخدام
-  currentUses  Int      @default(0)      // عدد المرات المستخدمة فعلياً
-  createdAt    DateTime @default(now())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId Int      @unique
+  username   String?
+  firstName  String?
+  lastName   String?
+  points     Int      @default(0)
+  status     Int      @default(0)  // 0 = غير محظور، 1 = محظور
+  banReason  String?  
+  photoUrl   String?
+  adsCount   Int      @default(0)    // عدد الإعلانات المشاهدة اليوم
+  lastAdDate DateTime @default(now()) // تاريخ آخر إعلان لتصفير العداد
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
