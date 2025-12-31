@@ -54,7 +54,7 @@ export default function DailyReward() {
       inAppSettings: {
         frequency: 3,
         capping: 0.1,
-        interval: 0, // جعلناه 0 ليسمح بالتكرار السريع
+        interval: 2, // جعلناه 0 ليسمح بالتكرار السريع
         timeout: 0,
         everyPage: false
       }
