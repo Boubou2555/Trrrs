@@ -62,7 +62,7 @@ export default function DailyReward() {
       inAppSettings: {
         frequency: 3,
         capping: 0.1,
-        interval: 30, // يجب انتظار 30 ثانية بين الإعلانات
+        interval: 10, // يجب انتظار 30 ثانية بين الإعلانات
         timeout: 0,
         everyPage: false
       }
@@ -88,7 +88,7 @@ export default function DailyReward() {
       } finally {
         setIsLoading(false);
       }
-    }, 5000); // تأخير 5 ثوانٍ
+    }, 8000); // تأخير 5 ثوانٍ
   };
 
   return (
