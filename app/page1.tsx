@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import './task.css'
 
-export default function DailyReward({ user, setUser }: { user: any, setUser: any }) {
+// استقبال user و setUser كخصائص (Props) لتحديث النقاط في الواجهة الرئيسية فوراً
+export default function Page1({ user, setUser }: { user: any, setUser: any }) {
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [notification, setNotification] = useState('')
-  const [giftCode, setGiftCode] = useState('') // حالة لتخزين الكود المكتوب
+  const [giftCode, setGiftCode] = useState('')
   const MAX_ADS = 3
 
   useEffect(() => {
@@ -31,8 +32,10 @@ export default function DailyReward({ user, setUser }: { user: any, setUser: any
         }),
       })
       const data = await res.json()
+      
       if (data.success) {
-        setUser((prev: any) => ({ ...prev, points: data.newPoints })) // تحديث النقاط فوراً في الشاشة
+        // تحديث رصيد المستخدم في الحالة العامة
+        setUser((prev: any) => ({ ...prev, points: data.newPoints }))
         setNotification(`🎉 ${data.message}`)
         setGiftCode('') // مسح الخانة بعد النجاح
       } else {
@@ -46,7 +49,7 @@ export default function DailyReward({ user, setUser }: { user: any, setUser: any
     }
   }
 
-  // وظيفة مشاهدة الإعلانات (الموجودة سابقاً)
+  // وظيفة مشاهدة الإعلانات
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return
     setIsLoading(true)
@@ -54,18 +57,22 @@ export default function DailyReward({ user, setUser }: { user: any, setUser: any
       const res = await fetch('/api/increase-points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: user.telegramId, action: 'watch_ad' }),
+        body: JSON.stringify({ 
+            telegramId: user.telegramId, 
+            action: 'watch_ad' 
+        }),
       })
       const data = await res.json()
       if (data.success) {
         setAdsCount(data.newCount)
         setUser((prev: any) => ({ ...prev, points: data.points }))
         setNotification('🎉 حصلت على 1 XP')
+      } else {
+        setNotification(`❌ ${data.message}`)
       }
     } catch (err) {
       setNotification('❌ خطأ في التحديث')
     } finally {
-      setIsLoading(true) // لإعادة التحميل البسيط
       setIsLoading(false)
       setTimeout(() => setNotification(''), 3000)
     }
@@ -75,7 +82,7 @@ export default function DailyReward({ user, setUser }: { user: any, setUser: any
     <div className="reward-container">
       <h1 className="reward-title">🎁 هدايا ومكافآت</h1>
 
-      {/* --- قسم كود الهدية الجديد --- */}
+      {/* قسم كود الهدية */}
       <div className="reward-card gift-card">
         <h3 className="section-subtitle">هل لديك كود هدية؟</h3>
         <div className="gift-input-group">
@@ -96,7 +103,10 @@ export default function DailyReward({ user, setUser }: { user: any, setUser: any
         </div>
       </div>
 
-      {/* --- قسم الإعلانات --- */}
+      {/* تنبيه النجاح أو الخطأ */}
+      {notification && <div className="notification-toast">{notification}</div>}
+
+      {/* قسم المهام اليومية (إعلانات) */}
       <div className="reward-card">
         <div className="ads-counter-info">
           <span>مهام المشاهدة اليومية</span>
@@ -109,13 +119,11 @@ export default function DailyReward({ user, setUser }: { user: any, setUser: any
           onClick={handleWatchAd} 
           disabled={adsCount >= MAX_ADS || isLoading} 
           className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
-          style={{marginTop: '15px'}}
         >
           {adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان (1 XP)'}
         </button>
+        <p className="reset-info">يتم تصفير العداد تلقائياً كل 24 ساعة</p>
       </div>
-
-      {notification && <div className="notification-toast">{notification}</div>}
     </div>
   )
 }
