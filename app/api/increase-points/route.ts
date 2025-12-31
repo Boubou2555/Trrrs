@@ -11,15 +11,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid user data' }, { status: 400 })
         }
 
-        // --- 1. منطق تفعيل كود الهدية (الجديد) ---
+        // --- 1. منطق تفعيل كود الهدية ---
         if (body.action === 'use_gift_code') {
-            const codeInput = parseInt(body.code) // تحويل الكود المدخل لرقم (Int)
+            const codeInput = parseInt(body.code) 
 
             if (isNaN(codeInput)) {
                 return NextResponse.json({ success: false, message: 'يرجى إدخال أرقام فقط' })
             }
 
-            // البحث عن الكود في جدول GiftCode
             const gift = await prisma.giftCode.findUnique({
                 where: { code: codeInput }
             })
@@ -32,7 +31,6 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ success: false, message: 'انتهى حد استخدام الكود' })
             }
 
-            // تحديث نقاط المستخدم وزيادة عداد الكود
             const updatedUser = await prisma.user.update({
                 where: { telegramId },
                 data: { points: { increment: gift.points } }
@@ -50,7 +48,41 @@ export async function POST(req: NextRequest) {
             })
         }
 
-        // --- 2. منطق تسجيل الدخول (الكود القديم الخاص بك مع تعديل) ---
+        // --- 2. منطق مشاهدة الإعلان (الجديد) ---
+        if (body.action === 'watch_ad') {
+            const MAX_ADS = 3; // يجب أن يتطابق مع الرقم في Frontend
+            
+            const currentUser = await prisma.user.findUnique({
+                where: { telegramId }
+            });
+
+            if (!currentUser) {
+                return NextResponse.json({ success: false, message: 'المستخدم غير موجود' });
+            }
+
+            // التحقق من عدد الإعلانات المشاهدة
+            if (currentUser.adsCount >= MAX_ADS) {
+                return NextResponse.json({ success: false, message: 'لقد أكملت جميع المهام اليومية' });
+            }
+
+            // تحديث النقاط وعداد الإعلانات
+            const updatedUser = await prisma.user.update({
+                where: { telegramId },
+                data: { 
+                    points: { increment: 1 }, // زيادة 1 XP
+                    adsCount: { increment: 1 } // زيادة عداد المشاهدة
+                }
+            });
+
+            return NextResponse.json({ 
+                success: true, 
+                points: updatedUser.points, 
+                newCount: updatedUser.adsCount,
+                message: '+1 XP تم منح المكافأة' 
+            });
+        }
+
+        // --- 3. منطق تسجيل الدخول أو جلب البيانات ---
         let user = await prisma.user.findUnique({
             where: { telegramId }
         })
@@ -62,7 +94,8 @@ export async function POST(req: NextRequest) {
                     username: body.username || '',
                     firstName: body.first_name || body.firstName || '',
                     lastName: body.last_name || body.lastName || '',
-                    points: 0
+                    points: 0,
+                    adsCount: 0 // تأكد من إضافة هذا الحقل في Prisma Schema
                 }
             })
         }
