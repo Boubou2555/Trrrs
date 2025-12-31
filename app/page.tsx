@@ -1,128 +1,84 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import './task.css'
+import { useEffect, useState, useCallback } from 'react'
+import './styles.css'
+import Page1 from './page1'
 
-export default function Page1({ user, setUser }: { user: any, setUser: any }) {
-  const [adsCount, setAdsCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-  const [notification, setNotification] = useState('')
-  const [giftCode, setGiftCode] = useState('')
-  const MAX_ADS = 3
+export default function Home() {
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'products' | 'tasks'>('products')
+  const [products] = useState([
+    { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png", category: "باونتي" },
+    { id: 2, title: "حساب جواهر 5000 ايفون", price: 170, imageUrl: "https://i.postimg.cc/k51fQRb3/New-Project-40-321-E54-A.png", category: "باونتي" },
+    { id: 4, title: "تحويل فليكسي", price: 50, imageUrl: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png", category: "تحويل" }
+  ])
 
   useEffect(() => {
-    if (user) {
-      setAdsCount(user.adsCount || 0)
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+      const tg = (window as any).Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      if (tg.initDataUnsafe.user) {
+        fetchUserData(tg.initDataUnsafe.user);
+      }
     }
-  }, [user])
+  }, []);
 
-  // تفعيل كود الهدية مع إصلاح مشكلة undefined
-  const handleUseGiftCode = async () => {
-    if (!giftCode || isLoading) return
-    setIsLoading(true)
-    setNotification('')
-
+  const fetchUserData = async (tgUser: any) => {
     try {
       const res = await fetch('/api/increase-points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          telegramId: user.telegramId, 
-          action: 'use_gift_code', 
-          code: giftCode 
-        }),
-      })
-      
-      const data = await res.json()
-      
-      if (res.ok && data.success) {
-        setUser((prev: any) => ({ ...prev, points: data.newPoints }))
-        setNotification(`🎉 ${data.message || 'تم تفعيل الكود بنجاح'}`)
-        setGiftCode('') 
-      } else {
-        // قراءة الرسالة من السيرفر بشكل صحيح لمنع undefined
-        setNotification(`❌ ${data.message || 'الكود غير صحيح أو انتهى'}`)
-      }
-    } catch (err) {
-      setNotification('❌ خطأ في الاتصال بالسيرفر')
-    } finally {
-      setIsLoading(false)
-      setTimeout(() => setNotification(''), 4000)
-    }
-  }
+        body: JSON.stringify(tgUser),
+      });
+      const data = await res.json();
+      setUser({ ...tgUser, telegramId: tgUser.id, points: data.points || 0, adsCount: data.adsCount || 0 });
+    } finally { setLoading(false); }
+  };
 
-  const handleWatchAd = async () => {
-    if (!user || adsCount >= MAX_ADS || isLoading) return
-    setIsLoading(true)
-    try {
-      const res = await fetch('/api/increase-points', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: user.telegramId, action: 'watch_ad' }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setAdsCount(data.newCount)
-        setUser((prev: any) => ({ ...prev, points: data.points }))
-        setNotification('🎉 حصلت على 1 XP')
-      }
-    } catch (err) {
-      setNotification('❌ خطأ في التحديث')
-    } finally {
-      setIsLoading(false)
-      setTimeout(() => setNotification(''), 3000)
-    }
-  }
+  if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>
 
   return (
-    <div className="reward-container">
-      <h1 className="reward-title">🎁 هدايا ومكافآت</h1>
-
-      {/* إعادة حقل كود الهدية */}
-      <div className="reward-card gift-card">
-        <h3 className="section-subtitle">هل لديك كود هدية؟</h3>
-        <div className="gift-input-group">
-          <input 
-            type="text" 
-            placeholder="أدخل الكود هنا..." 
-            value={giftCode}
-            onChange={(e) => setGiftCode(e.target.value)}
-            className="gift-input"
-          />
-          <button 
-            onClick={handleUseGiftCode} 
-            disabled={isLoading || !giftCode}
-            className="gift-submit-btn"
-          >
-            {isLoading ? '...' : 'تفعيل'}
-          </button>
+    <div className="main-container">
+      <div className="user-header">
+        <img src={user?.photo_url || 'https://via.placeholder.com/150'} className="user-avatar" />
+        <div className="user-info">
+          <h1 className="user-name">مرحباً، <span>{user?.first_name}</span></h1>
+          <p className="user-username">@{user?.username}</p>
         </div>
       </div>
 
-      {notification && (
-        <div className={`notification-toast ${notification.includes('❌') ? 'error-toast' : ''}`}>
-          {notification}
+      <div className="balance-card">
+        <div className="balance-label">رصيدك الحالي</div>
+        <div className="balance-amount">{user?.points} <span>XP</span></div>
+      </div>
+
+      <div className="tabs-container">
+        <button className={`tab-button ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>المنتجات</button>
+        <button className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>الهدية اليومية</button>
+      </div>
+
+      {activeTab === 'products' ? (
+        <div className="products-grid">
+          {products.map(p => (
+            <div key={p.id} className="product-card">
+              <div className="product-image-container">
+                <img src={p.imageUrl} className="product-image" />
+                <div className="product-badge">{p.category}</div>
+              </div>
+              <div className="product-info">
+                <h3 className="product-title">{p.title}</h3>
+                <div className="product-price">{p.price} XP</div>
+              </div>
+            </div>
+          ))}
         </div>
+      ) : (
+        <Page1 user={user} setUser={setUser} />
       )}
 
-      {/* قسم الإعلانات */}
-      <div className="reward-card">
-        <div className="ads-counter-info">
-          <span>مهام المشاهدة اليومية</span>
-          <span>{adsCount} / {MAX_ADS}</span>
-        </div>
-        <div className="progress-bar-container">
-          <div className="progress-bar-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
-        </div>
-        <button 
-          onClick={handleWatchAd} 
-          disabled={adsCount >= MAX_ADS || isLoading} 
-          className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
-          style={{marginTop: '15px'}}
-        >
-          {adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان (1 XP)'}
-        </button>
-      </div>
+      <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
 }
