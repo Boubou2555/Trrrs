@@ -24,12 +24,12 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
-// نموذج أكواد الهدايا (المعدل إلى رقم Int)
+// نموذج أكواد الهدايا
 model GiftCode {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  code         Int      @unique          // تم التغيير من String إلى Int لقطع الشك في المسافات
-  points       Int                       // عدد النقاط التي يمنحها الكود
-  maxUses      Int      @default(1)      // أقصى عدد مرات استخدام للكود
-  currentUses  Int      @default(0)      // عدد المرات التي استُخدم فيها الكود فعلياً
+  code         Int      @unique          // الكود كرقم
+  points       Int                       // النقاط الممنوحة
+  maxUses      Int      @default(1)      // أقصى عدد مرات استخدام
+  currentUses  Int      @default(0)      // عدد المرات المستخدمة فعلياً
   createdAt    DateTime @default(now())
 }
