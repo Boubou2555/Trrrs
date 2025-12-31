@@ -16,9 +16,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <body className={inter.className}>
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        {/* سكربت تليجرام الأساسي */}
+        <Script 
+          src="https://telegram.org/js/telegram-web-app.js" 
+          strategy="beforeInteractive" 
+        />
+        
+        {/* سكربت الإعلانات - تأكد أن الرابط هو الرابط المزود لك من الشركة */}
+        <Script 
+          src="https://app.adsgram.ai/js/adv.js" 
+          strategy="afterInteractive" 
+        />
+
         {children}
       </body>
     </html>
