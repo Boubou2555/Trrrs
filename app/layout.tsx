@@ -17,21 +17,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={inter.className}>
-        {/* سكربت تليجرام الأساسي */}
+      <head>
+        {/* 1. سكربت تليجرام الأساسي - يتم تحميله قبل التفاعل */}
         <Script 
           src="https://telegram.org/js/telegram-web-app.js" 
           strategy="beforeInteractive" 
         />
         
-        {/* سكربت Monetag SDK - تم التحديث بناءً على الكود الخاص بك */}
+        {/* 2. سكربت Monetag SDK - تم تحديثه بناءً على بيانات منطقتك (Zone 10400479) */}
+        {/* نستخدم استراتيجية beforeInteractive لضمان جاهزية دالة show_10400479 فور تحميل الصفحة */}
         <Script 
           src="//libtl.com/sdk.js" 
           data-zone="10400479" 
           data-sdk="show_10400479"
-          strategy="beforeInteractive" 
+          strategy="beforeInteractive"
         />
-
+      </head>
+      <body className={inter.className}>
         {children}
       </body>
     </html>
