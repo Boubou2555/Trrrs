@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import './task.css'
 
 declare global {
@@ -13,9 +13,12 @@ export default function DailyReward() {
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false)
   const [notification, setNotification] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const MAX_ADS = 3 // الحد الأقصى للمكافآت اليومية
+  
+  const MAX_ADS = 3
+  const adsCountRef = useRef(0); // مرجع لمتابعة العدد الحالي بدقة داخل التوقيت
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
@@ -37,8 +40,8 @@ export default function DailyReward() {
       const res = await fetch(`/api/increase-points?telegramId=${telegramId}`)
       const data = await res.json()
       if (data.success) {
-        // نأخذ عدد الإعلانات المشاهدة اليوم من قاعدة البيانات لتحديث شريط التقدم
         setAdsCount(data.count || 0)
+        adsCountRef.current = data.count || 0
       }
     } catch (err) {
       console.error('Fetch error')
@@ -47,97 +50,100 @@ export default function DailyReward() {
     }
   }
 
-  const handleWatchAd = async () => {
-    if (!user || adsCount >= MAX_ADS || isLoading) return;
-
-    if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ جاري تجهيز الإعلان...');
-      return;
+  // دالة منح المكافأة في السيرفر
+  const grantReward = async () => {
+    try {
+      const res = await fetch('/api/increase-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, action: 'watch_ad' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdsCount(data.newCount)
+        adsCountRef.current = data.newCount
+        setNotification(`✅ حصلت على المكافأة رقم ${data.newCount}`);
+        return true;
+      }
+    } catch (e) {
+      console.error("Reward failed");
     }
+    return false;
+  }
 
+  // الدالة الرئيسية للتشغيل التلقائي
+  const startAutoAds = async () => {
+    if (adsCountRef.current >= MAX_ADS || isAutoPlaying) return;
+    
+    setIsAutoPlaying(true);
     setIsLoading(true);
 
-    // 1. تشغيل الإعلان المدمج
-    window.show_10400479({
-      type: 'inApp',
-      inAppSettings: {
-        frequency: 3,
-        capping: 0.1,
-        interval: 10, // قمنا بتقليل الفاصل إلى 10 ثوانٍ ليكون أسرع للمستخدم
-        timeout: 0,
-        everyPage: false
-      }
-    });
+    for (let i = adsCountRef.current; i < MAX_ADS; i++) {
+      setNotification(`📺 جاري عرض الإعلان (${i + 1}/${MAX_ADS})...`);
 
-    // 2. منح المكافأة بعد 7 ثوانٍ (الوقت التقريبي لظهور الإعلان البيني)
-    setTimeout(async () => {
-      try {
-        const res = await fetch('/api/increase-points', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            id: user.id, 
-            action: 'watch_ad' 
-          }),
+      // 1. تشغيل الإعلان
+      if (typeof window.show_10400479 === 'function') {
+        window.show_10400479({
+          type: 'inApp',
+          inAppSettings: { frequency: 3, capping: 0.1, interval: 10, timeout: 0, everyPage: false }
         });
-        
-        const data = await res.json();
-        if (data.success) {
-          // تحديث شريط التقدم فوراً بمقدار إعلان واحد
-          setAdsCount(data.newCount); 
-          setNotification('🎉 أحسنت! حصلت على 1 XP');
-          setTimeout(() => setNotification(''), 3000);
-        }
-      } catch (err) {
-        console.error("Reward error");
-      } finally {
-        setIsLoading(false);
       }
-    }, 7000); 
+
+      // 2. الانتظار حتى ينتهي الإعلان (مثلاً 10 ثوانٍ) ثم منح المكافأة
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      
+      const success = await grantReward();
+      
+      if (!success) break; // توقف في حال حدوث خطأ بالسيرفر
+
+      // 3. انتظار قصير قبل الإعلان التالي لتجنب تداخل الـ SDK
+      if (i < MAX_ADS - 1) {
+        setNotification(`⏳ انتظر قليلاً للإعلان التالي...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
+
+    setIsAutoPlaying(false);
+    setIsLoading(false);
+    setNotification('🎉 اكتملت جميع مهامك التلقائية!');
   };
 
   return (
     <div className="reward-container">
-      <h1 className="reward-title">🎁 هدايا يومية</h1>
+      <h1 className="reward-title">🎁 هدايا تلقائية</h1>
       
       <div className="reward-card">
         <div className="ads-counter-info">
-          <span>التقدم اليومي:</span>
-          {/* عرض العدد الحالي من 3 */}
+          <span>التقدم الحالي:</span>
           <span>{adsCount} / {MAX_ADS}</span>
         </div>
         
-        {/* شريط التقدم يتفاعل مع كل إعلان */}
         <div className="progress-bar-container">
           <div 
             className="progress-bar-fill" 
-            style={{ width: `${(adsCount / MAX_ADS) * 100}%`, transition: 'width 0.5s ease-in-out' }}
+            style={{ width: `${(adsCount / MAX_ADS) * 100}%`, transition: 'width 1s ease' }}
           ></div>
         </div>
-        
-        <p className="reward-hint">شاهد إعلاناً لزيادة تقدمك والحصول على نقاط</p>
       </div>
       
       {notification && <div className="notification-toast">{notification}</div>}
       
       <button 
-        onClick={handleWatchAd} 
-        disabled={adsCount >= MAX_ADS || isLoading} 
-        className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
+        onClick={startAutoAds} 
+        disabled={adsCount >= MAX_ADS || isAutoPlaying} 
+        className={`claim-btn ${isAutoPlaying ? 'running' : ''}`}
       >
-        {isLoading ? (
-          <span className="loader">جاري المعالجة...</span>
+        {isAutoPlaying ? (
+          'جاري العمل تلقائياً...'
         ) : adsCount >= MAX_ADS ? (
-          '✅ اكتملت جميع مهام اليوم'
+          '✅ اكتملت جميع المهام'
         ) : (
-          `📺 شاهد إعلان رقم (${adsCount + 1})`
+          '🚀 ابدأ المشاهدة التلقائية'
         )}
       </button>
 
-      {adsCount < MAX_ADS && !isLoading && (
-        <p style={{fontSize: '11px', color: '#888', marginTop: '12px', textAlign: 'center'}}>
-          بإمكانك مشاهدة الإعلان التالي بعد 10 ثوانٍ
-        </p>
+      {isAutoPlaying && (
+        <p className="auto-hint">سيتم تحديث التقدم ومنح النقاط بعد كل إعلان تلقائياً.</p>
       )}
     </div>
   )
