@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import './task.css'
 
 declare global {
@@ -13,12 +13,8 @@ export default function DailyReward() {
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(false)
   const [notification, setNotification] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  
   const MAX_ADS = 3
-  const adsCountRef = useRef(0); // مرجع لمتابعة العدد الحالي بدقة داخل التوقيت
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
@@ -28,10 +24,8 @@ export default function DailyReward() {
       if (initDataUnsafe.user) {
         setUser(initDataUnsafe.user)
         fetchStatus(initDataUnsafe.user.id)
-      } else {
-        setError('يرجى الدخول من تليجرام')
-        setIsLoading(false)
       }
+      setIsLoading(false)
     }
   }, [])
 
@@ -39,89 +33,78 @@ export default function DailyReward() {
     try {
       const res = await fetch(`/api/increase-points?telegramId=${telegramId}`)
       const data = await res.json()
-      if (data.success) {
-        setAdsCount(data.count || 0)
-        adsCountRef.current = data.count || 0
-      }
-    } catch (err) {
-      console.error('Fetch error')
-    } finally {
-      setIsLoading(false)
-    }
+      if (data.success) setAdsCount(data.count || 0)
+    } catch (err) { console.error('Error fetching') }
   }
 
-  // دالة منح المكافأة في السيرفر
-  const grantReward = async () => {
-    try {
-      const res = await fetch('/api/increase-points', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id, action: 'watch_ad' }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAdsCount(data.newCount)
-        adsCountRef.current = data.newCount
-        setNotification(`✅ حصلت على المكافأة رقم ${data.newCount}`);
-        return true;
-      }
-    } catch (e) {
-      console.error("Reward failed");
-    }
-    return false;
-  }
+  const handleWatchAd = async () => {
+    if (!user || adsCount >= MAX_ADS || isLoading) return;
 
-  // الدالة الرئيسية للتشغيل التلقائي
-  const startAutoAds = async () => {
-    if (adsCountRef.current >= MAX_ADS || isAutoPlaying) return;
-    
-    setIsAutoPlaying(true);
+    if (typeof window.show_10400479 !== 'function') {
+      setNotification('⚠️ جاري تجهيز الإعلانات...');
+      return;
+    }
+
     setIsLoading(true);
+    setNotification(`📺 جاري عرض الإعلان رقم ${adsCount + 1}...`);
 
-    for (let i = adsCountRef.current; i < MAX_ADS; i++) {
-      setNotification(`📺 جاري عرض الإعلان (${i + 1}/${MAX_ADS})...`);
+    // 1. تشغيل الإعلان المدمج (In-App)
+    window.show_10400479({
+      type: 'inApp',
+      inAppSettings: {
+        frequency: 3,
+        capping: 0.1,
+        interval: 0, // جعلناه 0 ليسمح بالتكرار السريع
+        timeout: 0,
+        everyPage: false
+      }
+    });
 
-      // 1. تشغيل الإعلان
-      if (typeof window.show_10400479 === 'function') {
-        window.show_10400479({
-          type: 'inApp',
-          inAppSettings: { frequency: 3, capping: 0.1, interval: 10, timeout: 0, everyPage: false }
+    // 2. منح المكافأة بعد فترة زمنية وتحديث التقدم
+    // قمنا بتقليل الوقت ليكون التفاعل أسرع
+    setTimeout(async () => {
+      try {
+        const res = await fetch('/api/increase-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: user.id, action: 'watch_ad' }),
         });
+        
+        const data = await res.json();
+        if (data.success) {
+          setAdsCount(data.newCount);
+          setNotification(`🎉 رائع! حصلت على المكافأة ${data.newCount}/3`);
+          
+          // 3. التحقق إذا كان يحتاج لإعلان آخر
+          if (data.newCount < MAX_ADS) {
+            setTimeout(() => {
+              setNotification('💡 اضغط مرة أخرى لمشاهدة التالي فوراً');
+              setIsLoading(false);
+            }, 1000);
+          } else {
+            setNotification('✅ أحسنت! اكتملت جميع مهام اليوم');
+            setIsLoading(false);
+          }
+        }
+      } catch (err) {
+        setIsLoading(false);
       }
-
-      // 2. الانتظار حتى ينتهي الإعلان (مثلاً 10 ثوانٍ) ثم منح المكافأة
-      await new Promise(resolve => setTimeout(resolve, 10000));
-      
-      const success = await grantReward();
-      
-      if (!success) break; // توقف في حال حدوث خطأ بالسيرفر
-
-      // 3. انتظار قصير قبل الإعلان التالي لتجنب تداخل الـ SDK
-      if (i < MAX_ADS - 1) {
-        setNotification(`⏳ انتظر قليلاً للإعلان التالي...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
-    }
-
-    setIsAutoPlaying(false);
-    setIsLoading(false);
-    setNotification('🎉 اكتملت جميع مهامك التلقائية!');
+    }, 6000); // 6 ثوانٍ كافية لظهور الإعلان وبدء التفاعل
   };
 
   return (
     <div className="reward-container">
-      <h1 className="reward-title">🎁 هدايا تلقائية</h1>
+      <h1 className="reward-title">🎁 هدايا سريعة</h1>
       
       <div className="reward-card">
         <div className="ads-counter-info">
-          <span>التقدم الحالي:</span>
+          <span>التقدم:</span>
           <span>{adsCount} / {MAX_ADS}</span>
         </div>
-        
         <div className="progress-bar-container">
           <div 
             className="progress-bar-fill" 
-            style={{ width: `${(adsCount / MAX_ADS) * 100}%`, transition: 'width 1s ease' }}
+            style={{ width: `${(adsCount / MAX_ADS) * 100}%`, transition: 'all 0.6s ease' }}
           ></div>
         </div>
       </div>
@@ -129,21 +112,17 @@ export default function DailyReward() {
       {notification && <div className="notification-toast">{notification}</div>}
       
       <button 
-        onClick={startAutoAds} 
-        disabled={adsCount >= MAX_ADS || isAutoPlaying} 
-        className={`claim-btn ${isAutoPlaying ? 'running' : ''}`}
+        onClick={handleWatchAd} 
+        disabled={adsCount >= MAX_ADS || isLoading} 
+        className={`claim-btn ${isLoading ? 'loading' : ''}`}
       >
-        {isAutoPlaying ? (
-          'جاري العمل تلقائياً...'
-        ) : adsCount >= MAX_ADS ? (
-          '✅ اكتملت جميع المهام'
-        ) : (
-          '🚀 ابدأ المشاهدة التلقائية'
-        )}
+        {isLoading ? 'جاري العرض...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : `📺 شاهد الإعلان التالي`}
       </button>
 
-      {isAutoPlaying && (
-        <p className="auto-hint">سيتم تحديث التقدم ومنح النقاط بعد كل إعلان تلقائياً.</p>
+      {adsCount < MAX_ADS && !isLoading && (
+          <p style={{fontSize: '11px', color: '#888', marginTop: '10px'}}>
+            * اضغط بعد كل مكافأة للانتقال للإعلان التالي مباشرة.
+          </p>
       )}
     </div>
   )
