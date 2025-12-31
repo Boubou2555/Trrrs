@@ -4,22 +4,32 @@ import { prisma } from '@/lib/prisma'
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
-        const telegramId = Number(body.telegramId || body.id)
 
+        // 1. التحقق من وجود المعرف الأساسي (Telegram ID)
+        const telegramId = Number(body.telegramId || body.id)
         if (!telegramId) {
-            return NextResponse.json({ error: 'Invalid user data' }, { status: 400 })
+            return NextResponse.json({ error: 'بيانات المستخدم غير صالحة' }, { status: 400 })
         }
 
-        // --- 1. منطق تفعيل كود الهدية ---
+        // --- وظيفة: تفعيل كود الهدية ---
         if (body.action === 'use_gift_code') {
             const codeInput = parseInt(body.code)
+
             if (isNaN(codeInput)) {
                 return NextResponse.json({ success: false, message: 'يرجى إدخال أرقام فقط' })
             }
 
-            const gift = await prisma.giftCode.findUnique({ where: { code: codeInput } })
-            if (!gift) return NextResponse.json({ success: false, message: 'كود غير صحيح' })
-            if (gift.currentUses >= gift.maxUses) return NextResponse.json({ success: false, message: 'انتهى حد الاستخدام' })
+            const gift = await prisma.giftCode.findUnique({
+                where: { code: codeInput }
+            })
+
+            if (!gift) {
+                return NextResponse.json({ success: false, message: 'كود رقمي غير صحيح' })
+            }
+
+            if (gift.currentUses >= gift.maxUses) {
+                return NextResponse.json({ success: false, message: 'انتهى حد استخدام الكود' })
+            }
 
             const updatedUser = await prisma.user.update({
                 where: { telegramId },
@@ -29,66 +39,38 @@ export async function POST(req: NextRequest) {
             await prisma.giftCode.update({
                 where: { code: codeInput },
                 data: { currentUses: { increment: 1 } }
-            })
+            }).catch(() => console.log("خطأ بسيط في تحديث الكود"))
 
-            return NextResponse.json({ success: true, newPoints: updatedUser.points, message: `مبروك! +${gift.points} XP` })
+            return NextResponse.json({ 
+                success: true, 
+                newPoints: updatedUser.points, 
+                message: `مبروك! حصلت على ${gift.points} XP` 
+            })
         }
 
-        // --- 2. منطق مشاهدة الإعلان مع تصفير العداد اليومي ---
+        // --- وظيفة: مكافأة مشاهدة الإعلان ---
         if (body.action === 'watch_ad') {
             const MAX_ADS = 3;
             const now = new Date();
 
-            const currentUser = await prisma.user.findUnique({ where: { telegramId } });
-            if (!currentUser) return NextResponse.json({ success: false, message: 'المستخدم غير موجود' });
+            const currentUser = await prisma.user.findUnique({
+                where: { telegramId }
+            });
 
-            // حساب هل نحن في يوم جديد؟
-            const lastDate = new Date(currentUser.lastAdDate);
-            const isNewDay = now.toDateString() !== lastDate.toDateString();
-
-            let currentAdsCount = isNewDay ? 0 : currentUser.adsCount;
-
-            if (currentAdsCount >= MAX_ADS) {
-                return NextResponse.json({ success: false, message: 'عد غداً، انتهت مهام اليوم' });
+            if (!currentUser) {
+                return NextResponse.json({ success: false, message: 'المستخدم غير موجود' });
             }
 
-            // تحديث البيانات: إذا كان يوم جديد نصفر العداد، وإذا نفس اليوم نزيد 1
+            // التحقق هل نحن في يوم جديد لتصفير العداد؟
+            const isNewDay = now.toDateString() !== new Date(currentUser.lastAdDate).toDateString();
+            
+            let currentCount = isNewDay ? 0 : currentUser.adsCount;
+
+            if (currentCount >= MAX_ADS) {
+                return NextResponse.json({ success: false, message: 'لقد استنفدت محاولات اليوم، عد غداً' });
+            }
+
             const updatedUser = await prisma.user.update({
                 where: { telegramId },
-                data: {
+                data: { 
                     points: { increment: 1 },
-                    adsCount: isNewDay ? 1 : { increment: 1 },
-                    lastAdDate: now // تحديث تاريخ آخر مشاهدة
-                }
-            });
-
-            return NextResponse.json({
-                success: true,
-                points: updatedUser.points,
-                newCount: updatedUser.adsCount,
-                message: '+1 XP'
-            });
-        }
-
-        // --- 3. منطق الدخول (جلب أو إنشاء المستخدم) ---
-        let user = await prisma.user.findUnique({ where: { telegramId } })
-        if (!user) {
-            user = await prisma.user.create({
-                data: {
-                    telegramId,
-                    username: body.username || '',
-                    firstName: body.first_name || body.firstName || '',
-                    lastName: body.last_name || body.lastName || '',
-                    points: 0,
-                    adsCount: 0
-                }
-            })
-        }
-
-        return NextResponse.json(user)
-
-    } catch (error) {
-        console.error('API Error:', error)
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-    }
-}
