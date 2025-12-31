@@ -24,10 +24,12 @@ export default function RootLayout({
           strategy="beforeInteractive" 
         />
         
-        {/* سكربت الإعلانات - تأكد أن الرابط هو الرابط المزود لك من الشركة */}
+        {/* سكربت Monetag SDK - تم التحديث بناءً على الكود الخاص بك */}
         <Script 
-          src="https://app.adsgram.ai/js/adv.js" 
-          strategy="afterInteractive" 
+          src="//libtl.com/sdk.js" 
+          data-zone="10400479" 
+          data-sdk="show_10400479"
+          strategy="beforeInteractive" 
         />
 
         {children}
