@@ -1,199 +1,128 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { WebApp } from '@twa-dev/types'
-import './styles.css'
-import Page1 from './page1'
+import { useEffect, useState } from 'react'
+import './task.css'
 
-declare global {
-  interface Window {
-    Telegram?: { WebApp: WebApp }
-  }
-}
+export default function Page1({ user, setUser }: { user: any, setUser: any }) {
+  const [adsCount, setAdsCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [notification, setNotification] = useState('')
+  const [giftCode, setGiftCode] = useState('')
+  const MAX_ADS = 3
 
-type User = {
-  telegramId: number
-  firstName: string
-  points: number
-  photoUrl?: string
-  username?: string
-  status?: number
-  banReason?: string
-}
-
-type Product = {
-  id: number; 
-  title: string; 
-  price: number; 
-  imageUrl: string; 
-  category: string;
-}
-
-export default function Home() {
-  const [user, setUser] = useState<User | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
-  const [activeTab, setActiveTab] = useState<'products' | 'tasks'>('products')
-  const [loading, setLoading] = useState(true)
-  const [isBanned, setIsBanned] = useState(false)
-
-  // 1. جلب بيانات المستخدم عند فتح التطبيق
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp
-      tg.ready()
-      tg.expand()
-      if (tg.initDataUnsafe.user) {
-        fetchUserData(tg.initDataUnsafe.user)
-      } else {
-        setError('يرجى فتح البوت من تليجرام')
-        setLoading(false)
-      }
+    if (user) {
+      setAdsCount(user.adsCount || 0)
     }
-  }, [])
+  }, [user])
 
-  const fetchUserData = useCallback(async (tgUser: any) => {
+  // تفعيل كود الهدية مع إصلاح مشكلة undefined
+  const handleUseGiftCode = async () => {
+    if (!giftCode || isLoading) return
+    setIsLoading(true)
+    setNotification('')
+
     try {
       const res = await fetch('/api/increase-points', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tgUser),
+        body: JSON.stringify({ 
+          telegramId: user.telegramId, 
+          action: 'use_gift_code', 
+          code: giftCode 
+        }),
       })
+      
       const data = await res.json()
       
-      if (data.status === 1) {
-        setIsBanned(true)
-        setUser({ 
-          telegramId: tgUser.id, 
-          firstName: tgUser.first_name, 
-          points: data.points || 0, 
-          status: 1, 
-          banReason: data.banReason 
-        })
-        setLoading(false)
-        return
+      if (res.ok && data.success) {
+        setUser((prev: any) => ({ ...prev, points: data.newPoints }))
+        setNotification(`🎉 ${data.message || 'تم تفعيل الكود بنجاح'}`)
+        setGiftCode('') 
+      } else {
+        // قراءة الرسالة من السيرفر بشكل صحيح لمنع undefined
+        setNotification(`❌ ${data.message || 'الكود غير صحيح أو انتهى'}`)
       }
-
-      setUser({
-        telegramId: tgUser.id,
-        firstName: tgUser.first_name,
-        username: tgUser.username,
-        points: data.points || 0,
-        photoUrl: tgUser.photo_url
-      })
-      fetchProducts()
     } catch (err) {
-      setError('فشل في الاتصال بالسيرفر')
-      setLoading(false)
+      setNotification('❌ خطأ في الاتصال بالسيرفر')
+    } finally {
+      setIsLoading(false)
+      setTimeout(() => setNotification(''), 4000)
     }
-  }, [])
-
-  const fetchProducts = () => {
-    const mockProducts: Product[] = [
-      { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png", category: "باونتي" },
-      { id: 2, title: "حساب جواهر 5000 ايفون", price: 170, imageUrl: "https://i.postimg.cc/k51fQRb3/New-Project-40-321-E54-A.png", category: "باونتي" },
-      { id: 3, title: "حساب جواهر + كوزان اندرويد", price: 200, imageUrl: "https://i.postimg.cc/fL1CF4C8/New-Project-40-FE9627-F.png", category: "باونتي" },
-      { id: 4, title: "تحويل فليكسي", price: 50, imageUrl: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png", category: "تحويل" },
-      { id: 5, title: "عضوية شهرية ", price: 600, imageUrl: "https://i.postimg.cc/DzZcwfYC/New-Project-40-8383-F74.png", category: "شحن" }
-    ]
-    setProducts(mockProducts)
-    setLoading(false)
   }
 
-  const handlePurchase = async (product: Product) => {
-    const tg = window.Telegram?.WebApp
-    if (!user || !tg) return
-
-    if (user.points < product.price) {
-      tg.showAlert(`❌ رصيدك غير كافٍ!\nسعر المنتج: ${product.price} XP\nرصيدك: ${user.points} XP`)
-      return
-    }
-
-    tg.showConfirm(`هل أنت متأكد من شراء "${product.title}" مقابل ${product.price} XP؟`, async (confirmed) => {
-      if (confirmed) {
-        try {
-          const res = await fetch('/api/increase-points', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId: user.telegramId, action: 'purchase_product', price: product.price }),
-          })
-          const data = await res.json()
-
-          if (data.success) {
-            setUser(prev => prev ? { ...prev, points: data.newPoints } : null)
-            tg.showAlert('✅ تم الخصم بنجاح! تواصل مع المدير الآن.', () => {
-              const msg = `طلب شراء مؤكد:\nالمنتج: ${product.title}\nالسعر: ${product.price} XP\nID: ${user.telegramId}`
-              tg.openTelegramLink(`https://t.me/Kharwaydo?text=${encodeURIComponent(msg)}`)
-            })
-          } else {
-            tg.showAlert('❌ فشل الخصم: ' + (data.message || 'خطأ غير معروف'))
-          }
-        } catch (e) {
-          tg.showAlert('❌ حدث خطأ أثناء عملية الاتصال')
-        }
+  const handleWatchAd = async () => {
+    if (!user || adsCount >= MAX_ADS || isLoading) return
+    setIsLoading(true)
+    try {
+      const res = await fetch('/api/increase-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: user.telegramId, action: 'watch_ad' }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setAdsCount(data.newCount)
+        setUser((prev: any) => ({ ...prev, points: data.points }))
+        setNotification('🎉 حصلت على 1 XP')
       }
-    })
+    } catch (err) {
+      setNotification('❌ خطأ في التحديث')
+    } finally {
+      setIsLoading(false)
+      setTimeout(() => setNotification(''), 3000)
+    }
   }
-
-  if (isBanned) return <div className="banned-container">🚫 أنت محظور: {user?.banReason}</div>
-  if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>
-  if (error) return <div className="error-container">{error}</div>
 
   return (
-    <div className="main-container">
-      {/* الهيدر: معلومات المستخدم */}
-      <div className="user-header">
-        <img src={user?.photoUrl || 'https://via.placeholder.com/150'} className="user-avatar" alt="profile" />
-        <div className="user-info">
-          <h1 className="user-name">مرحباً، <span>{user?.firstName}</span>!</h1>
-          <p className="user-username">@{user?.username || 'user'}</p>
+    <div className="reward-container">
+      <h1 className="reward-title">🎁 هدايا ومكافآت</h1>
+
+      {/* إعادة حقل كود الهدية */}
+      <div className="reward-card gift-card">
+        <h3 className="section-subtitle">هل لديك كود هدية؟</h3>
+        <div className="gift-input-group">
+          <input 
+            type="text" 
+            placeholder="أدخل الكود هنا..." 
+            value={giftCode}
+            onChange={(e) => setGiftCode(e.target.value)}
+            className="gift-input"
+          />
+          <button 
+            onClick={handleUseGiftCode} 
+            disabled={isLoading || !giftCode}
+            className="gift-submit-btn"
+          >
+            {isLoading ? '...' : 'تفعيل'}
+          </button>
         </div>
       </div>
 
-      {/* بطاقة الرصيد */}
-      <div className="balance-card">
-        <div className="balance-label">رصيدك الحالي</div>
-        <div className="balance-amount">{user?.points.toLocaleString()} <span>XP</span></div>
-      </div>
-
-      {/* التبديل بين التبويبات */}
-      <div className="tabs-container">
-        <button 
-          className={`tab-button ${activeTab === 'products' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('products')}
-        >
-          المتجر
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('tasks')}
-        >
-          الهدايا
-        </button>
-      </div>
-
-      {/* محتوى الصفحة بناءً على التبويب النشط */}
-      {activeTab === 'products' ? (
-        <div className="products-grid">
-          {products.map(product => (
-            <div key={product.id} className="product-card" onClick={() => handlePurchase(product)}>
-              <div className="product-image-container">
-                <img src={product.imageUrl} alt={product.title} className="product-image" />
-                <div className="product-badge">{product.category}</div>
-              </div>
-              <div className="product-info">
-                <h3 className="product-title">{product.title}</h3>
-                <div className="product-price">{product.price} XP</div>
-              </div>
-            </div>
-          ))}
+      {notification && (
+        <div className={`notification-toast ${notification.includes('❌') ? 'error-toast' : ''}`}>
+          {notification}
         </div>
-      ) : ( 
-        /* نمرر الـ user والـ setUser لكي يتمكن ملف Page1 من تحديث الرصيد هنا */
-        <Page1 user={user} setUser={setUser} /> 
       )}
 
-      <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
+      {/* قسم الإعلانات */}
+      <div className="reward-card">
+        <div className="ads-counter-info">
+          <span>مهام المشاهدة اليومية</span>
+          <span>{adsCount} / {MAX_ADS}</span>
+        </div>
+        <div className="progress-bar-container">
+          <div className="progress-bar-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
+        </div>
+        <button 
+          onClick={handleWatchAd} 
+          disabled={adsCount >= MAX_ADS || isLoading} 
+          className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
+          style={{marginTop: '15px'}}
+        >
+          {adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان (1 XP)'}
+        </button>
+      </div>
     </div>
   )
 }
