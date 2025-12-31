@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import './task.css'
 
-// استقبال user و setUser كخصائص (Props) لتحديث النقاط في الواجهة الرئيسية فوراً
 export default function Page1({ user, setUser }: { user: any, setUser: any }) {
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -17,10 +16,12 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
     }
   }, [user])
 
-  // وظيفة تفعيل كود الهدية
+  // إصلاح وظيفة تفعيل الكود لضمان قراءة الرسائل من السيرفر
   const handleUseGiftCode = async () => {
     if (!giftCode || isLoading) return
     setIsLoading(true)
+    setNotification('') // مسح أي تنبيه سابق
+
     try {
       const res = await fetch('/api/increase-points', {
         method: 'POST',
@@ -31,25 +32,28 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
           code: giftCode 
         }),
       })
+      
       const data = await res.json()
       
-      if (data.success) {
-        // تحديث رصيد المستخدم في الحالة العامة
+      if (res.ok && data.success) {
+        // تحديث النقاط في الواجهة الرئيسية فوراً
         setUser((prev: any) => ({ ...prev, points: data.newPoints }))
-        setNotification(`🎉 ${data.message}`)
-        setGiftCode('') // مسح الخانة بعد النجاح
+        setNotification(`🎉 ${data.message || 'تم شحن الكود بنجاح!'}`)
+        setGiftCode('') 
       } else {
-        setNotification(`❌ ${data.message}`)
+        // قراءة رسالة الخطأ القادمة من السيرفر أو وضع رسالة احتياطية
+        const errorMsg = data.message || data.error || 'الكود غير صحيح أو انتهى'
+        setNotification(`❌ ${errorMsg}`)
       }
     } catch (err) {
-      setNotification('❌ خطأ في الاتصال بالسيرفر')
+      setNotification('❌ خطأ في الاتصال: تأكد من الإنترنت')
     } finally {
       setIsLoading(false)
-      setTimeout(() => setNotification(''), 3000)
+      // إخفاء التنبيه بعد 4 ثوانٍ
+      setTimeout(() => setNotification(''), 4000)
     }
   }
 
-  // وظيفة مشاهدة الإعلانات
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return
     setIsLoading(true)
@@ -68,10 +72,10 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
         setUser((prev: any) => ({ ...prev, points: data.points }))
         setNotification('🎉 حصلت على 1 XP')
       } else {
-        setNotification(`❌ ${data.message}`)
+        setNotification(`❌ ${data.message || 'انتهت محاولاتك'}`)
       }
     } catch (err) {
-      setNotification('❌ خطأ في التحديث')
+      setNotification('❌ فشل تحديث النقاط')
     } finally {
       setIsLoading(false)
       setTimeout(() => setNotification(''), 3000)
@@ -82,7 +86,7 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
     <div className="reward-container">
       <h1 className="reward-title">🎁 هدايا ومكافآت</h1>
 
-      {/* قسم كود الهدية */}
+      {/* قسم كود الهدية المطور */}
       <div className="reward-card gift-card">
         <h3 className="section-subtitle">هل لديك كود هدية؟</h3>
         <div className="gift-input-group">
@@ -103,10 +107,14 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
         </div>
       </div>
 
-      {/* تنبيه النجاح أو الخطأ */}
-      {notification && <div className="notification-toast">{notification}</div>}
+      {/* تنبيهات النظام المستقرة */}
+      {notification && (
+        <div className={`notification-toast ${notification.includes('❌') ? 'error-toast' : ''}`}>
+          {notification}
+        </div>
+      )}
 
-      {/* قسم المهام اليومية (إعلانات) */}
+      {/* قسم المهام اليومية */}
       <div className="reward-card">
         <div className="ads-counter-info">
           <span>مهام المشاهدة اليومية</span>
@@ -119,10 +127,10 @@ export default function Page1({ user, setUser }: { user: any, setUser: any }) {
           onClick={handleWatchAd} 
           disabled={adsCount >= MAX_ADS || isLoading} 
           className={`claim-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
+          style={{marginTop: '15px'}}
         >
           {adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد إعلان (1 XP)'}
         </button>
-        <p className="reset-info">يتم تصفير العداد تلقائياً كل 24 ساعة</p>
       </div>
     </div>
   )
