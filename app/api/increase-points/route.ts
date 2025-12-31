@@ -6,88 +6,61 @@ export async function POST(req: Request) {
     const body = await req.json()
     const telegramId = Number(body.telegramId || body.id)
 
-    if (!telegramId) {
-      return NextResponse.json({ success: false, message: 'ID missing' }, { status: 400 })
-    }
+    if (!telegramId) return NextResponse.json({ success: false, message: 'ID missing' })
 
-    // 1. منطق تفعيل كود الهدية (Gift Code)
+    // 1. منطق كود الهدية (التركيز على منح النقاط أولاً)
     if (body.action === 'use_gift_code') {
-      const { code } = body
+      const codeInput = body.code?.trim()
       
-      // البحث عن الكود في قاعدة البيانات
-      const gift = await prisma.giftCode.findUnique({ where: { code: code?.trim() } })
+      // البحث عن الكود
+      const gift = await prisma.giftCode.findUnique({ where: { code: codeInput } })
       
-      if (!gift) {
-        return NextResponse.json({ success: false, message: 'هذا الكود غير صحيح' })
-      }
-      
-      if (gift.currentUses >= gift.maxUses) {
-        return NextResponse.json({ success: false, message: 'انتهت صلاحية الكود' })
-      }
+      if (!gift) return NextResponse.json({ success: false, message: 'هذا الكود غير صحيح' })
+      if (gift.currentUses >= gift.maxUses) return NextResponse.json({ success: false, message: 'انتهت صلاحية الكود' })
 
-      // منح النقاط للمستخدم (تبسيط العملية لضمان النجاح وتجاوز أخطاء الربط)
+      // منح النقاط للمستخدم (عملية مستقلة لضمان النجاح)
       const updatedUser = await prisma.user.update({
         where: { telegramId },
         data: { points: { increment: gift.points } }
       })
 
-      // تحديث عداد استخدام الكود بشكل منفصل (محاولة غير حارقة)
+      // محاولة تحديث عداد استخدام الكود (بشكل منفصل حتى لا يعطل منح النقاط)
       try {
         await prisma.giftCode.update({
-          where: { code: code?.trim() },
+          where: { code: codeInput },
           data: { currentUses: { increment: 1 } }
         })
-      } catch (e) { 
-        console.log("تنبيه: فشل تحديث عداد الكود لكن تم منح النقاط بنجاح") 
+      } catch (e) {
+        console.log("فشل تحديث عداد الكود ولكن تم منح النقاط")
       }
 
       return NextResponse.json({ 
         success: true, 
         newPoints: updatedUser.points, 
-        message: `مبروك! حصلت على ${gift.points} XP` 
+        message: `تم التفعيل! حصلت على ${gift.points} XP` 
       })
     }
 
-    // 2. منطق مشاهدة الإعلانات (يعمل بشكل مستقر)
+    // 2. منطق الإعلانات (كما هو ظاهر في صورك أنه يعمل)
     if (body.action === 'watch_ad') {
       const updated = await prisma.user.update({
         where: { telegramId },
-        data: { 
-          points: { increment: 1 }, 
-          adsCount: { increment: 1 }, 
-          lastAdDate: new Date() 
-        }
+        data: { points: { increment: 1 }, adsCount: { increment: 1 }, lastAdDate: new Date() }
       })
-      
-      return NextResponse.json({ 
-        success: true, 
-        points: updated.points, 
-        newCount: updated.adsCount 
-      })
+      return NextResponse.json({ success: true, points: updated.points, newCount: updated.adsCount })
     }
 
-    // 3. في حالة تسجيل الدخول أو تحديث البيانات العادي
+    // 3. تحديث بيانات المستخدم عند الدخول
     const user = await prisma.user.upsert({
       where: { telegramId },
-      update: { 
-        username: body.username, 
-        firstName: body.first_name || body.firstName 
-      },
-      create: { 
-        telegramId, 
-        username: body.username, 
-        firstName: body.first_name || body.firstName, 
-        points: 0 
-      }
+      update: { username: body.username, firstName: body.first_name || body.firstName },
+      create: { telegramId, username: body.username, firstName: body.first_name || body.firstName, points: 0 }
     })
 
     return NextResponse.json(user)
 
-  } catch (e) {
-    console.error("Global API Error:", e)
-    return NextResponse.json({ 
-      success: false, 
-      message: 'خطأ في الربط: تأكد من إعدادات الـ IP في MongoDB Atlas (0.0.0.0/0)' 
-    }, { status: 500 })
+  } catch (error: any) {
+    console.error("API Error:", error)
+    return NextResponse.json({ success: false, message: 'خطأ في الربط: يرجى التأكد من بيانات MongoDB' }, { status: 500 })
   }
 }
