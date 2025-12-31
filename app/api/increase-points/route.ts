@@ -9,7 +9,6 @@ export async function GET(req: Request) {
   if (!telegramId) return NextResponse.json({ error: 'ID مطلوب' }, { status: 400 })
 
   try {
-    // البحث عن المستخدم أو إنشاؤه تلقائياً إذا دخل التطبيق لأول مرة
     let user = await prisma.user.findUnique({ where: { telegramId } })
     
     if (!user) {
@@ -37,9 +36,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const telegramId = Number(body.telegramId || body.id)
+    const telegramId = Number(body.telegramId || body.userId || body.id)
 
-    // تحديث أو إنشاء المستخدم (Upsert) لضمان تسجيل البيانات دائماً
+    // تحديث أو إنشاء المستخدم
     const user = await prisma.user.upsert({
       where: { telegramId },
       update: { username: body.username, firstName: body.first_name || body.firstName },
@@ -48,7 +47,7 @@ export async function POST(req: Request) {
 
     if (user.status === 1) return NextResponse.json({ error: 'محظور', status: 1 }, { status: 403 })
 
-    // --- أولاً: وظيفة شحن أكواد الهدايا ---
+    // --- 1. وظيفة شحن أكواد الهدايا ---
     if (body.action === 'redeem_code') {
       const inputCode = String(body.code).trim().replace(/\s+/g, '');
       
@@ -74,7 +73,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: `✅ تم شحن ${giftCode.points} نقطة`, points: updated[0].points });
     }
 
-    // --- ثانياً: وظيفة مشاهدة الإعلانات ---
+    // --- 2. وظيفة مشاهدة الإعلانات ---
     if (body.action === 'watch_ad') {
       const now = new Date();
       const lastAdDate = user.lastAdDate ? new Date(user.lastAdDate) : new Date(0);
@@ -90,7 +89,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, newCount: updated.adsCount, points: updated.points })
     }
 
-    // --- ثالثاً: وظيفة شراء المنتجات ---
+    // --- 3. وظيفة شراء المنتجات ---
     if (body.action === 'purchase_product') {
       if (user.points < body.price) return NextResponse.json({ success: false, message: 'رصيد غير كافٍ' });
       const updated = await prisma.user.update({
@@ -102,49 +101,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(user)
   } catch (e) {
+    console.error(e)
     return NextResponse.json({ error: 'خطأ داخلي في السيرفر' }, { status: 500 })
-  }
-}
-    // التحقق هل استعمله هذا الشخص من قبل
-    const alreadyUsed = await prisma.usedCode.findFirst({
-      where: { 
-        userId: userId,
-        codeId: giftCode.id
-      }
-    });
-
-    if (alreadyUsed) {
-      return NextResponse.json({ success: false, message: "⚠️ لقد استخدمت هذا الكود سابقاً" });
-    }
-
-    // تنفيذ العملية في قاعدة البيانات
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { telegramId: userId },
-        data: { points: { increment: giftCode.points } }
-      }),
-      prisma.usedCode.create({
-        data: { 
-          userId: userId, 
-          codeId: giftCode.id 
-        }
-      }),
-      prisma.giftCode.update({
-        where: { id: giftCode.id },
-        data: { currentUses: { increment: 1 } }
-      })
-    ]);
-
-    return NextResponse.json({ 
-      success: true, 
-      message: `✅ مبروك! حصلت على ${giftCode.points} نقطة.` 
-    });
-
-  } catch (error: any) {
-    console.error("خطأ:", error);
-    return NextResponse.json({ 
-      success: false, 
-      message: "⚙️ خطأ في السيرفر - تأكد من DATABASE_URL" 
-    });
   }
 }
