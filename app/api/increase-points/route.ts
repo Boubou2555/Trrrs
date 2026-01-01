@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
@@ -10,48 +11,41 @@ export async function POST(req: Request) {
         const { action, telegramId, amount, transactionId, adminId, reason, status, title, message } = body;
         const userId = parseInt(telegramId || body.id);
 
-        // 1. عمليات المسؤول
+        // --- لوحة التحكم (للمسؤول فقط) ---
         if (adminId === ADMIN_ID) {
-            // إضافة/خصم نقاط مع تسجيل في السجل
             if (action === 'manage_points') {
                 const val = parseInt(amount);
-                const updated = await prisma.user.update({
-                    where: { telegramId: userId },
-                    data: { points: { increment: val } }
-                });
-                await prisma.transaction.create({
-                    data: { telegramId: userId, type: 'admin', description: val > 0 ? '🎁 مكافأة من الإدارة' : '⚠️ خصم من الإدارة', amount: val, status: 'completed' }
-                });
+                const updated = await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: val } } });
+                await prisma.transaction.create({ data: { telegramId: userId, type: 'admin', description: val > 0 ? '🎁 مكافأة من الإدارة' : '⚠️ خصم من الإدارة', amount: val, status: 'completed' } });
                 return NextResponse.json({ success: true, points: updated.points });
             }
-            // إرسال إشعار
             if (action === 'send_notif') {
-                await prisma.notification.create({
-                    data: { telegramId: userId, title, message }
-                });
+                await prisma.notification.create({ data: { telegramId: userId, title, message } });
                 return NextResponse.json({ success: true });
             }
             if (action === 'update_order') {
-                await prisma.transaction.update({ where: { id: transactionId }, data: { status } });
+                await prisma.transaction.update({ where: { id: transactionId }, data: { status: status } });
                 return NextResponse.json({ success: true });
             }
             if (action === 'toggle_ban') {
-                await prisma.user.update({ where: { telegramId: userId }, data: { status: status === 'ban' ? 1 : 0, banReason: reason } });
+                // status هنا يكون 'ban' أو 'unban'
+                await prisma.user.update({ 
+                    where: { telegramId: userId }, 
+                    data: { status: status === 'ban' ? 1 : 0, banReason: status === 'ban' ? reason : "" } 
+                });
                 return NextResponse.json({ success: true });
             }
         }
 
-        // 2. عمليات المستخدم
+        // --- فحص الحظر (للمستخدم العادي) ---
         const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
-        if (checkUser?.status === 1) return NextResponse.json({ success: false, banned: true, reason: checkUser.banReason });
-
-        if (action === 'read_notifs') {
-            await prisma.notification.updateMany({ where: { telegramId: userId, isRead: false }, data: { isRead: true } });
-            return NextResponse.json({ success: true });
+        if (checkUser?.status === 1 && action !== 'login_check') {
+            return NextResponse.json({ success: false, banned: true, reason: checkUser.banReason });
         }
 
+        // --- إضافة نقاط الإعلانات مع تحديث فوري ---
         if (action === 'watch_ad') {
-            const user = await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: 1 }, adsCount: { increment: 1 } } });
+            const user = await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: 1 } } });
             await prisma.transaction.create({ data: { telegramId: userId, type: 'ad', description: 'مشاهدة إعلان', amount: 1, status: 'completed' } });
             return NextResponse.json({ success: true, newPoints: user.points });
         }
@@ -62,12 +56,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, newPoints: user.points });
         }
 
+        // تسجيل الدخول الأولي
         const user = await prisma.user.upsert({
             where: { telegramId: userId },
             update: { username: body.username, firstName: body.first_name, photoUrl: body.photo_url },
             create: { telegramId: userId, username: body.username, firstName: body.first_name, photoUrl: body.photo_url, points: 0 }
         });
-        return NextResponse.json({ success: true, points: user.points });
+        return NextResponse.json({ success: true, points: user.points, banned: user.status === 1, reason: user.banReason });
     } catch (e) { return NextResponse.json({ success: false }); }
 }
 
@@ -78,11 +73,10 @@ export async function GET(req: Request) {
 
     if (adminId === ADMIN_ID) {
         const orders = await prisma.transaction.findMany({ where: { status: 'pending' }, orderBy: { createdAt: 'desc' } });
-        const users = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 40 });
+        const users = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
         return NextResponse.json({ success: true, orders, users });
     }
-
     const history = await prisma.transaction.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 20 });
-    const notifs = await prisma.notification.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 10 });
+    const notifs = await prisma.notification.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 15 });
     return NextResponse.json({ success: true, history, notifs });
 }
