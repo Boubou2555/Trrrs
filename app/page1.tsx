@@ -24,12 +24,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         setUser(userData)
         fetch(`/api/increase-points?telegramId=${userData.id}`)
           .then(res => res.json())
-          .then(data => { 
-            if (data.success) {
-              setAdsCount(data.count)
-              onPointsUpdate(data.points)
-            }
-          })
+          .then(data => { if (data.success) { setAdsCount(data.count); onPointsUpdate(data.points); } })
       }
     }
   }, [])
@@ -38,27 +33,12 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
     setIsLoading(true);
-    setNotification('📺 جاري عرض الإعلان المدمج...');
+    setNotification('📺 جاري طلب الإعلان...');
 
-    // استدعاء الإعلان يدوياً وبسيطاً لمنع الجنون في التكرار
     if (typeof window.show_10400479 === 'function') {
-      try {
-        window.show_10400479({
-          type: 'inApp',
-          inAppSettings: { frequency: 1, everyPage: false }
-        });
-      } catch (e) { console.error("Ad block") }
+        window.show_10400479({ type: 'inApp', inAppSettings: { frequency: 1, everyPage: false } });
     }
 
-    // مؤقت أمان لفك القفل لو لم يظهر الإعلان
-    const safetyReset = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        setNotification('⚠️ حاول مرة أخرى');
-      }
-    }, 20000);
-
-    // معالجة الجائزة بعد 15 ثانية
     setTimeout(async () => {
       try {
         const res = await fetch('/api/increase-points', {
@@ -69,17 +49,15 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         
         const data = await res.json();
         if (data.success) {
-          clearTimeout(safetyReset);
           setAdsCount(data.newCount);
-          setNotification('🎉 حصلت على 1 XP بنجاح!');
+          setNotification('🎉 مبروك حصلت على 1 XP');
           
-          // تحديث الرصيد في الصفحة الرئيسية فوراً
           const bRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
           const bData = await bRes.json();
           if (bData.success) onPointsUpdate(bData.points);
         }
       } catch (err) {
-        setNotification('❌ خطأ في تحديث البيانات');
+        setNotification('❌ خطأ في السيرفر');
       } finally {
         setIsLoading(false);
       }
@@ -89,24 +67,13 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   return (
     <div className="pro-container">
       <div className="mining-card">
-        <div className="stats-header">
-          <span>شريط المهام</span>
-          <span className="percent">{Math.round((adsCount / MAX_ADS) * 100)}%</span>
-        </div>
-        <div className="pro-progress-container">
-          <div className="pro-progress-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
-        </div>
-        <p className="count-label">مكتمل {adsCount} من {MAX_ADS} مهام</p>
+        <div className="stats-header"><span>شريط المهام</span><span className="percent">{Math.round((adsCount / MAX_ADS) * 100)}%</span></div>
+        <div className="pro-progress-container"><div className="pro-progress-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div></div>
+        <p className="count-label">مكتمل {adsCount} من {MAX_ADS}</p>
       </div>
-
-      <div className="status-msg">{notification || 'بانتظار مشاهدة الإعلان...'}</div>
-
-      <button 
-        onClick={handleWatchAd}
-        disabled={adsCount >= MAX_ADS || isLoading}
-        className={`main-ad-btn ${isLoading ? 'is-loading' : ''}`}
-      >
-        {isLoading ? '⏳ جاري المعالجة...' : adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : `📺 شاهد الإعلان رقم ${adsCount + 1}`}
+      <div className="status-msg">{notification}</div>
+      <button onClick={handleWatchAd} disabled={adsCount >= MAX_ADS || isLoading} className="main-ad-btn">
+        {isLoading ? 'جاري العرض...' : adsCount >= MAX_ADS ? '✅ انتهى' : '📺 شاهد الإعلان'}
       </button>
     </div>
   )
