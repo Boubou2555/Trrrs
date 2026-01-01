@@ -7,11 +7,9 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (pts: number
   const [adsCount, setAdsCount] = useState(0)
 
   useEffect(() => {
-    // التعديل هنا: نستخدم (window as any) لتجاوز خطأ TypeScript
     const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
       setUser(tg.initDataUnsafe.user)
-      // جلب عدد الإعلانات الحالية من السيرفر عند الفتح
       fetch(`/api/increase-points?telegramId=${tg.initDataUnsafe.user.id}`)
         .then(res => res.json())
         .then(data => {
@@ -24,8 +22,6 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (pts: number
     const tg = (window as any).Telegram?.WebApp
     if (!user) return
 
-    // هنا يمكنك وضع كود شركة الإعلانات الخاص بك
-    // عند انتهاء الإعلان، نقوم بتحديث النقاط في السيرفر
     try {
       const res = await fetch('/api/increase-points', {
         method: 'POST',
@@ -38,24 +34,62 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (pts: number
       const data = await res.json()
       if (data.success) {
         setAdsCount(data.newCount)
-        onPointsUpdate(data.newPoints)
-        tg.showAlert('✅ حصلت على 1 XP لمشاهدة الإعلان!')
+        onPointsUpdate(data.points)
+        tg.showAlert('✅ حصلت على 1 XP بنجاح!')
       }
     } catch (e) {
-      tg.showAlert('❌ فشل تحديث النقاط')
+      tg.showAlert('❌ حدث خطأ أثناء تحديث النقاط')
     }
   }
 
   return (
-    <div className="tasks-container">
-      <div className="task-card">
-        <div className="task-icon">🎁</div>
-        <div className="task-info">
-          <h3>هدية يومية (إعلانات)</h3>
-          <p>شاهد إعلان واحصل على 1 XP</p>
-          <small>لقد شاهدت اليوم: {adsCount}</small>
+    <div style={{ padding: '10px 0' }}>
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '15px',
+        padding: '20px',
+        textAlign: 'center',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '15px'
+      }}>
+        <div style={{ fontSize: '3rem' }}>🎁</div>
+        
+        <div>
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>مكافأة الإعلانات</h3>
+          <p style={{ opacity: 0.7, fontSize: '0.9rem' }}>شاهد إعلان قصير واحصل على 1 XP</p>
         </div>
-        <button className="watch-btn" onClick={handleWatchAd}>مشاهدة</button>
+
+        <div style={{
+          background: 'rgba(108, 92, 231, 0.1)',
+          padding: '8px 20px',
+          borderRadius: '20px',
+          fontSize: '0.85rem',
+          color: '#a29bfe',
+          border: '1px solid rgba(108, 92, 231, 0.2)'
+        }}>
+          إعلانات اليوم: <strong>{adsCount}</strong>
+        </div>
+
+        <button 
+          onClick={handleWatchAd}
+          style={{
+            width: '100%',
+            padding: '14px',
+            borderRadius: '12px',
+            border: 'none',
+            background: 'var(--primary)',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            boxShadow: '0 4px 15px rgba(108, 92, 231, 0.3)'
+          }}
+        >
+          مشاهدة الإعلان الآن
+        </button>
       </div>
     </div>
   )
