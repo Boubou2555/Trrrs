@@ -43,30 +43,31 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
     if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ جاري تحضير الإعلان...');
+      setNotification('⚠️ جاري تجهيز الإعلان...');
       return;
     }
 
+    // 1. تفعيل حالة التحميل والمنع
     setIsLoading(true);
-    setNotification('📺 جاري عرض الإعلان المدمج...');
+    setNotification('📺 جاري عرض الإعلان...');
 
-    // الحل النهائي لمنع فتح إعلانات متتالية:
-    // نقوم بطلب إعلان واحد فقط ونعطل كل الخيارات التي تؤدي للتكرار التلقائي
-    window.show_10400479({
-      type: 'inApp',
-      inAppSettings: {
-        frequency: 1,       // يظهر مرة واحدة فقط في كل استدعاء
-        capping: 0, 
-        interval: 0, 
-        timeout: 0,
-        everyPage: false,   // هامة جداً: تمنع فتح إعلانات عند التنقل أو التكرار
-        force: false        // جعل الاستدعاء طبيعي لمنع "الجنون" في فتح النوافذ
-      }
-    });
+    // 2. استدعاء الإعلان بأبسط صورة ممكنة (In-App المباشر)
+    // نمرر "inApp" فقط بدون إعدادات إضافية لمنع التداخل مع السكريبت الأساسي
+    try {
+        window.show_10400479({
+            type: 'inApp',
+            inAppSettings: {
+                frequency: 1,
+                everyPage: false // لضمان عدم التكرار التلقائي
+            }
+        });
+    } catch (e) {
+        console.error("Ad error");
+    }
 
-    // عداد الـ 15 ثانية (هذا الجزء مستقل تماماً عن الإعلان)
+    // 3. عداد الـ 15 ثانية - القفل التام للزر لمنع الضغط المتكرر
     setTimeout(async () => {
-      setNotification('⏳ جاري التحقق من المشاهدة...');
+      setNotification('⏳ جاري التحقق من مكافأتك...');
       
       try {
         const res = await fetch('/api/increase-points', {
@@ -80,7 +81,7 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
           setAdsCount(data.newCount);
           setNotification('🎉 حصلت على 1 XP بنجاح!');
           
-          // طلب تحديث الرصيد من السيرفر
+          // تحديث الرصيد في الصفحة الرئيسية
           const balanceRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
           const balanceData = await balanceRes.json();
           if (balanceData.success) {
@@ -88,11 +89,10 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
           }
         }
       } catch (err) {
-        setNotification('❌ خطأ في تحديث البيانات');
+        setNotification('❌ خطأ في الاتصال بالسيرفر');
       } finally {
+        // فك القفل بعد انتهاء كل شيء
         setIsLoading(false);
-        // مسح الإشعار بعد فترة قصيرة
-        setTimeout(() => setNotification(''), 3000);
       }
     }, 15000); 
   };
@@ -107,17 +107,17 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
         <div className="pro-progress-container">
           <div className="pro-progress-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
         </div>
-        <p className="count-label">مكتمل: {adsCount} من {MAX_ADS}</p>
+        <p className="count-label">مكتمل {adsCount} من أصل {MAX_ADS}</p>
       </div>
 
-      <div className="status-msg">{notification || 'بانتظار مشاهدة الإعلان...'}</div>
+      <div className="status-msg">{notification || 'اضغط لمشاهدة الإعلان'}</div>
 
       <button 
         onClick={handleWatchAd}
         disabled={adsCount >= MAX_ADS || isLoading}
         className={`main-ad-btn ${isLoading ? 'is-loading' : ''}`}
       >
-        {isLoading ? 'جاري العرض والتحقق...' : adsCount >= MAX_ADS ? '✅ انتهت مهام اليوم' : `📺 شاهد الإعلان رقم ${adsCount + 1}`}
+        {isLoading ? 'إعلان نشط...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : `📺 مشاهدة إعلان (${adsCount + 1})`}
       </button>
       
       <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
