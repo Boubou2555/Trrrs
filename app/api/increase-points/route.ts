@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const ADMIN_ID = 123456789; // ⚠️ ضع ID تليجرام الخاص بك هنا
+const ADMIN_ID = 5149849049; // ⚠️ ضع ID تليجرام الخاص بك هنا
 
 export async function POST(req: Request) {
     try {
