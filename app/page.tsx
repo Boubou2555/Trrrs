@@ -15,8 +15,8 @@ export default function Home() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'products' | 'tasks'>('products')
+  const [products, setProducts] = useState<any[]>([])
 
-  // دالة تحديث الرصيد لحظياً
   const updateBalance = (newPoints: number) => {
     setUser((prev: any) => prev ? { ...prev, points: newPoints } : null)
   }
@@ -36,8 +36,17 @@ export default function Home() {
         points: data.points || 0,
         photoUrl: tgUser.photo_url
       })
+      
+      // إعادة قائمة المنتجات الأصلية
+      setProducts([
+        { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png", category: "باونتي" },
+        { id: 2, title: "حساب جواهر 5000 ايفون", price: 170, imageUrl: "https://i.postimg.cc/k51fQRb3/New-Project-40-321-E54-A.png", category: "باونتي" },
+        { id: 3, title: "حساب جواهر + كوزان اندرويد", price: 200, imageUrl: "https://i.postimg.cc/fL1CF4C8/New-Project-40-FE9627-F.png", category: "باونتي" },
+        { id: 4, title: "تحويل فليكسي", price: 50, imageUrl: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png", category: "تحويل" },
+        { id: 5, title: "عضوية شهرية ", price: 600, imageUrl: "https://i.postimg.cc/DzZcwfYC/New-Project-40-8383-F74.png", category: "شحن" }
+      ])
     } catch (err) {
-      console.error("Error fetching user data")
+      console.error("Error")
     } finally {
       setLoading(false)
     }
@@ -48,9 +57,7 @@ export default function Home() {
       const tg = window.Telegram.WebApp
       tg.ready()
       tg.expand()
-      if (tg.initDataUnsafe.user) {
-        fetchUserData(tg.initDataUnsafe.user)
-      }
+      if (tg.initDataUnsafe.user) fetchUserData(tg.initDataUnsafe.user)
     }
   }, [fetchUserData])
 
@@ -66,7 +73,6 @@ export default function Home() {
         </div>
       </div>
       
-      {/* بطاقة الرصيد التي تتحدث فوراً */}
       <div className="balance-card">
         <div className="balance-label">رصيدك الحالي</div>
         <div className="balance-amount">{user?.points?.toLocaleString()} <span>XP</span></div>
@@ -79,8 +85,18 @@ export default function Home() {
 
       {activeTab === 'products' ? (
         <div className="products-grid">
-           {/* محتوى المنتجات الخاص بك */}
-           <p style={{textAlign:'center', opacity:0.5}}>قائمة المنتجات تظهر هنا...</p>
+          {products.map(product => (
+            <div key={product.id} className="product-card">
+              <div className="product-image-container">
+                <img src={product.imageUrl} alt={product.title} className="product-image" />
+                <div className="product-badge">{product.category}</div>
+              </div>
+              <div className="product-info">
+                <h3 className="product-title">{product.title}</h3>
+                <div className="product-price">{product.price} XP</div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : ( 
         <Page1 onPointsUpdate={updateBalance} /> 
