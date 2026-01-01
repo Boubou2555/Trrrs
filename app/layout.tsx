@@ -18,17 +18,15 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
-        {/* سكربت تليجرام */}
         <Script 
           src="https://telegram.org/js/telegram-web-app.js" 
           strategy="beforeInteractive" 
         />
-        
-        {/* سكربت Monetag - وضعناه بدون SDK تشغيل تلقائي لمنع الفتح العشوائي */}
         <Script 
-          src="https://jsoque.com/sdk.js" 
+          src="//libtl.com/sdk.js" 
           data-zone="10400479" 
-          strategy="lazyOnload"
+          data-sdk="show_10400479"
+          strategy="beforeInteractive"
         />
       </head>
       <body className={inter.className}>
