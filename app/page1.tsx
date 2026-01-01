@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 
-// تعريف دالة الإعلانات لـ TypeScript حتى لا يظهر خطأ أثناء الـ Build
 declare global {
   interface Window {
     Telegram?: any;
@@ -15,14 +14,13 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [notification, setNotification] = useState('')
-  const MAX_ADS = 10 // يمكنك تغيير العدد الأقصى هنا
+  const MAX_ADS = 10 
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
       const userData = tg.initDataUnsafe.user
       setUser(userData)
-      // جلب عدد الإعلانات الحالية من قاعدة بيانات Prisma
       fetch(`/api/increase-points?telegramId=${userData.id}`)
         .then(res => res.json())
         .then(data => { 
@@ -35,7 +33,6 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     const tg = (window as any).Telegram?.WebApp
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
-    // التأكد من وجود كود الإعلانات في الصفحة
     if (typeof (window as any).show_10400479 !== 'function') {
       setNotification('⚠️ جاري تجهيز نظام الإعلانات...');
       return;
@@ -44,22 +41,15 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     setIsLoading(true);
     setNotification('📺 جاري عرض الإعلان...');
 
-    // تشغيل الإعلان (Rewarded Interstitial)
     (window as any).show_10400479()
       .then(async () => {
-        // يتم التنفيذ بعد مشاهدة الإعلان بالكامل
         setNotification('⏳ جاري تسجيل جائزتك...');
-        
         try {
           const res = await fetch('/api/increase-points', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              telegramId: user.id, // نستخدم التسمية الصحيحة للسيرفر
-              action: 'watch_ad' 
-            }),
+            body: JSON.stringify({ telegramId: user.id, action: 'watch_ad' }),
           });
-          
           const data = await res.json();
           if (data.success) {
             setAdsCount(data.newCount);
@@ -67,12 +57,13 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
             onPointsUpdate(data.newPoints);
           }
         } catch (err) {
-          setNotification('❌ فشل تحديث النقاط في السيرفر');
+          setNotification('❌ فشل تحديث النقاط');
         } finally {
           setIsLoading(false);
         }
       })
-      .catch((e) => {
+      // تم إصلاح السطر أدناه بإضافة : any
+      .catch((e: any) => {
         setNotification('❌ تعذر عرض الإعلان حالياً');
         setIsLoading(false);
       });
@@ -92,54 +83,26 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
           <span style={{ color: '#a29bfe' }}>{Math.round((adsCount / MAX_ADS) * 100)}%</span>
         </div>
 
-        {/* شريط التقدم */}
-        <div style={{ 
-          width: '100%', 
-          height: '10px', 
-          background: 'rgba(255,255,255,0.1)', 
-          borderRadius: '5px', 
-          marginBottom: '10px',
-          overflow: 'hidden'
-        }}>
-          <div style={{ 
-            width: `${(adsCount / MAX_ADS) * 100}%`, 
-            height: '100%', 
-            background: 'var(--primary)', 
-            transition: 'width 0.3s ease' 
-          }}></div>
+        <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', marginBottom: '10px', overflow: 'hidden' }}>
+          <div style={{ width: `${(adsCount / MAX_ADS) * 100}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
         </div>
         
-        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '20px' }}>
-          مكتمل {adsCount} من {MAX_ADS} إعلانات
-        </p>
+        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '20px' }}>مكتمل {adsCount} من {MAX_ADS}</p>
 
-        <div style={{ 
-          margin: '15px 0', 
-          padding: '10px', 
-          borderRadius: '10px', 
-          fontSize: '0.85rem',
-          background: notification.includes('🎉') ? 'rgba(0,184,148,0.1)' : 'rgba(255,255,255,0.03)',
-          color: notification.includes('🎉') ? '#00b894' : '#fff'
-        }}>
-          {notification || 'جاهز لعرض الإعلانات'}
+        <div style={{ margin: '15px 0', padding: '10px', borderRadius: '10px', fontSize: '0.85rem', background: 'rgba(255,255,255,0.03)' }}>
+          {notification || 'جاهز للعرض'}
         </div>
 
         <button 
           onClick={handleWatchAd} 
           disabled={adsCount >= MAX_ADS || isLoading}
           style={{
-            width: '100%',
-            padding: '15px',
-            borderRadius: '12px',
-            border: 'none',
+            width: '100%', padding: '15px', borderRadius: '12px', border: 'none',
             background: adsCount >= MAX_ADS ? '#333' : 'var(--primary)',
-            color: '#white',
-            fontWeight: 'bold',
-            cursor: adsCount >= MAX_ADS ? 'not-allowed' : 'pointer',
-            boxShadow: adsCount >= MAX_ADS ? 'none' : '0 4px 15px rgba(108, 92, 231, 0.3)'
+            color: 'white', fontWeight: 'bold', cursor: 'pointer'
           }}
         >
-          {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : '📺 شاهد الإعلان واربح XP'}
+          {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد الإعلان'}
         </button>
       </div>
     </div>
