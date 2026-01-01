@@ -1,115 +1,221 @@
-/* --- History Styles (تنسيقات السجل الجديد) --- */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
+:root {
+  --primary: #6c5ce7;
+  --primary-dark: #5649c0;
+  --secondary: #a29bfe;
+  --dark: #2d3436;
+  --darker: #1e272e;
+  --light: #f5f6fa;
+  --danger: #ff7675;
+  --success: #00b894;
+  --warning: #f1c40f;
+  --radius-md: 15px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  font-family: 'Tajawal', sans-serif;
+}
+
+body {
+  background-color: var(--darker);
+  color: var(--light);
+  direction: rtl;
+  overflow-x: hidden;
+}
+
+.main-container {
+  padding: 1rem;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--darker) 0%, #161d23 100%);
+}
+
+/* --- الرأس ومعلومات المستخدم --- */
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(44, 62, 80, 0.4);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.user-avatar {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  object-fit: cover;
+}
+
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-size: 1.1rem; }
+.user-name span { color: var(--secondary); }
+.user-username { font-size: 0.85rem; opacity: 0.7; color: var(--secondary); }
+
+/* --- بطاقة الرصيد --- */
+.balance-card {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+}
+
+.balance-label { font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; }
+.balance-amount { font-size: 2.2rem; font-weight: 700; }
+.balance-amount span { font-size: 1rem; opacity: 0.8; }
+
+/* --- أزرار التبويبات --- */
+.tabs-container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 5px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  gap: 5px;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 12px 5px;
+  border: none;
+  background: transparent;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.tab-button.active {
+  background: var(--primary);
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.2);
+}
+
+/* --- شبكة المنتجات --- */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.product-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.product-card:active { transform: scale(0.97); }
+
+.product-image-container {
+  position: relative;
+  width: 100%;
+  height: 130px;
+  background: #222;
+}
+
+.product-image { width: 100%; height: 100%; object-fit: cover; }
+
+.product-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--primary);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 20px;
+  z-index: 5;
+}
+
+.product-info { padding: 10px; text-align: center; }
+.product-title { font-size: 0.85rem; margin-bottom: 8px; height: 35px; overflow: hidden; }
+.product-price { color: var(--secondary); font-weight: 700; font-size: 0.95rem; }
+
+/* --- سجل العمليات (History) --- */
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   padding-bottom: 20px;
-}
-
-.history-title {
-  font-size: 1.1rem;
-  margin-bottom: 15px;
-  color: var(--light);
-  border-right: 3px solid var(--primary);
-  padding-right: 10px;
 }
 
 .history-item {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
-  padding: 15px;
+  border-radius: 12px;
+  padding: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.3s ease;
 }
 
 .history-left {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .status-icon {
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-}
-
-/* ألوان الحالات */
-.status-icon.pending {
-  background: rgba(241, 196, 15, 0.15);
-  border: 1px solid rgba(241, 196, 15, 0.3);
-}
-
-.status-icon.completed {
-  background: rgba(0, 184, 148, 0.15);
-  border: 1px solid rgba(0, 184, 148, 0.3);
-}
-
-.status-icon.rejected {
-  background: rgba(255, 118, 117, 0.15);
-  border: 1px solid rgba(255, 118, 117, 0.3);
-}
-
-.history-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.history-desc {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--light);
-}
-
-.history-date {
-  font-size: 0.75rem;
-  opacity: 0.5;
-}
-
-.history-amount {
-  font-weight: 700;
   font-size: 1rem;
-  direction: ltr; /* لعرض رقم النقاط بشكل صحيح من اليسار لليمين */
 }
 
-.history-amount.plus {
-  color: var(--success);
-}
+.status-icon.pending { background: rgba(241, 196, 15, 0.15); color: var(--warning); }
+.status-icon.completed { background: rgba(0, 184, 148, 0.15); color: var(--success); }
+.status-icon.rejected { background: rgba(255, 118, 117, 0.15); color: var(--danger); }
 
-.history-amount.minus {
-  color: var(--danger);
-}
+.history-details { display: flex; flex-direction: column; }
+.history-desc { font-size: 0.85rem; font-weight: 600; color: var(--light); margin: 0; }
+.history-date { font-size: 0.7rem; opacity: 0.5; margin: 0; }
 
-.empty-history {
-  text-align: center;
-  padding: 50px 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius-md);
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  opacity: 0.6;
-}
+.history-amount { font-weight: bold; font-size: 0.95rem; }
+.history-amount.plus { color: var(--success); }
+.history-amount.minus { color: var(--danger); }
 
-.empty-history p {
-  font-size: 0.9rem;
-}
+.empty-msg { text-align: center; opacity: 0.4; padding: 40px; font-size: 0.9rem; }
 
-/* تحسين شكل التبويبات لتشمل 3 أزرار */
-.tabs-container {
+/* --- التحميل --- */
+.loading-container {
+  height: 70vh;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
 }
 
-.tab-button {
-  font-size: 0.85rem; /* تصغير الخط قليلاً لتناسب 3 أزرار */
-  padding: 10px 5px;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.footer {
+  text-align: center;
+  padding: 20px 0;
+  opacity: 0.4;
+  font-size: 0.75rem;
+}
+.footer span { color: var(--primary); font-weight: bold; }
