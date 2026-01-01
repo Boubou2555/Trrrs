@@ -33,7 +33,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [isBanned, setIsBanned] = useState(false)
 
-  // دالة لتحديث الرصيد يدوياً من المكونات الفرعية
+  // دالة تحديث الرصيد (سيتم تمريرها لـ Page1)
   const updateUserPoints = (newPoints: number) => {
     setUser(prev => prev ? { ...prev, points: newPoints } : null)
   }
@@ -142,15 +142,18 @@ export default function Home() {
           <p className="user-username">@{user?.username || 'user'}</p>
         </div>
       </div>
+      
+      {/* عرض الرصيد - يتحدث تلقائياً */}
       <div className="balance-card">
         <div className="balance-label">رصيدك الحالي</div>
         <div className="balance-amount">{user?.points.toLocaleString()} <span>XP</span></div>
       </div>
+
       <div className="tabs-container">
         <button className={`tab-button ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>المنتجات</button>
         <button className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>الهدية اليومية</button>
       </div>
-      
+
       {activeTab === 'products' ? (
         <div className="products-grid">
           {products.map(product => (
@@ -164,10 +167,10 @@ export default function Home() {
           ))}
         </div>
       ) : ( 
-        /* هنا نمرر الدالة لصفحة المهام */
+        /* تمرير دالة التحديث لصفحة المهام */
         <Page1 onPointsUpdate={updateUserPoints} /> 
       )}
-      
+
       <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
