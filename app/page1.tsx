@@ -33,7 +33,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
     setIsLoading(true);
-    setNotification('📺 جاري طلب الإعلان...');
+    setNotification('📺 جاري عرض الإعلان...');
 
     if (typeof window.show_10400479 === 'function') {
         window.show_10400479({ type: 'inApp', inAppSettings: { frequency: 1, everyPage: false } });
@@ -50,7 +50,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         const data = await res.json();
         if (data.success) {
           setAdsCount(data.newCount);
-          setNotification('🎉 مبروك حصلت على 1 XP');
+          setNotification('🎉 حصلت على 1 XP بنجاح!');
           
           const bRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
           const bData = await bRes.json();
