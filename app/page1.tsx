@@ -1,97 +1,62 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import './task.css'
 
-declare global {
-  interface Window {
-    show_10400479?: () => Promise<void>; // تحديث النوع ليدعم Promise
-  }
-}
-
-export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: number) => void }) {
+export default function Page1({ onPointsUpdate }: { onPointsUpdate: (pts: number) => void }) {
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-  const [notification, setNotification] = useState('')
-  const MAX_ADS = 3
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const userData = window.Telegram.WebApp.initDataUnsafe?.user
-      if (userData) {
-        setUser(userData)
-        fetch(`/api/increase-points?telegramId=${userData.id}`)
-          .then(res => res.json())
-          .then(data => { if (data.success) setAdsCount(data.count) })
-      }
+    // التعديل هنا: نستخدم (window as any) لتجاوز خطأ TypeScript
+    const tg = (window as any).Telegram?.WebApp
+    if (tg?.initDataUnsafe?.user) {
+      setUser(tg.initDataUnsafe.user)
+      // جلب عدد الإعلانات الحالية من السيرفر عند الفتح
+      fetch(`/api/increase-points?telegramId=${tg.initDataUnsafe.user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setAdsCount(data.count || 0)
+        })
     }
   }, [])
 
   const handleWatchAd = async () => {
-    if (!user || adsCount >= MAX_ADS || isLoading) return;
+    const tg = (window as any).Telegram?.WebApp
+    if (!user) return
 
-    if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ جاري تجهيز الإعلان...');
-      return;
-    }
-
-    setIsLoading(true);
-    setNotification('📺 جاري عرض الإعلان...');
-
-    // استخدام الكود الذي أرفقته أنت (Rewarded Interstitial)
-    window.show_10400479()
-      .then(async () => {
-        // يتم تنفيذ هذا الجزء فقط بعد انتهاء الإعلان
-        setNotification('⏳ جاري تسجيل المكافأة...');
-        
-        try {
-          const res = await fetch('/api/increase-points', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: user.id, action: 'watch_ad' }),
-          });
-          
-          const data = await res.json();
-          if (data.success) {
-            setAdsCount(data.newCount);
-            setNotification('🎉 حصلت على 1 XP بنجاح!');
-            onPointsUpdate(data.newPoints || data.points);
-          }
-        } catch (err) {
-          setNotification('❌ فشل تحديث النقاط');
-        } finally {
-          setIsLoading(false);
-        }
+    // هنا يمكنك وضع كود شركة الإعلانات الخاص بك
+    // عند انتهاء الإعلان، نقوم بتحديث النقاط في السيرفر
+    try {
+      const res = await fetch('/api/increase-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          telegramId: user.id, 
+          action: 'watch_ad' 
+        }),
       })
-      .catch((e) => {
-        setNotification('❌ تعذر عرض الإعلان حالياً');
-        setIsLoading(false);
-      });
-  };
+      const data = await res.json()
+      if (data.success) {
+        setAdsCount(data.newCount)
+        onPointsUpdate(data.newPoints)
+        tg.showAlert('✅ حصلت على 1 XP لمشاهدة الإعلان!')
+      }
+    } catch (e) {
+      tg.showAlert('❌ فشل تحديث النقاط')
+    }
+  }
 
   return (
-    <div className="pro-container">
-      <div className="mining-card">
-        <div className="stats-header">
-          <span>شريط المهام</span>
-          <span className="percent">{Math.round((adsCount / MAX_ADS) * 100)}%</span>
+    <div className="tasks-container">
+      <div className="task-card">
+        <div className="task-icon">🎁</div>
+        <div className="task-info">
+          <h3>هدية يومية (إعلانات)</h3>
+          <p>شاهد إعلان واحصل على 1 XP</p>
+          <small>لقد شاهدت اليوم: {adsCount}</small>
         </div>
-        <div className="pro-progress-container">
-          <div className="pro-progress-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
-        </div>
-        <p className="count-label">مكتمل {adsCount} من {MAX_ADS}</p>
+        <button className="watch-btn" onClick={handleWatchAd}>مشاهدة</button>
       </div>
-
-      <div className="status-msg">{notification}</div>
-
-      <button 
-        onClick={handleWatchAd} 
-        disabled={adsCount >= MAX_ADS || isLoading} 
-        className="main-ad-btn"
-      >
-        {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتمل اليوم' : '📺 شاهد واحصل على XP'}
-      </button>
     </div>
   )
 }
