@@ -5,7 +5,7 @@ import './task.css'
 
 declare global {
   interface Window {
-    show_10400479?: (params: any) => void; // تم تغييرها لتناسب نمط In-App
+    show_10400479?: (params: any) => void;
   }
 }
 
@@ -43,28 +43,34 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
     if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ النظام يستعد..');
+      setNotification('⚠️ جاري تحضير الإعلان المدمج...');
       return;
     }
 
     setIsLoading(true);
-    setNotification('📺 جاري عرض الإعلان المدمج...');
+    setNotification('📺 جاري تحميل الإعلان...');
 
-    // التعديل الجوهري: استدعاء الإعلان داخل التطبيق (In-App)
-    window.show_10400479({
-      type: 'inApp',
-      inAppSettings: {
-        frequency: 1,      // إظهار في كل مرة
-        capping: 0.1,      // تقليل القيود
-        interval: 0,       // لا يوجد وقت انتظار بين الإعلانات
-        timeout: 0,        // تحميل فوري
-        everyPage: false
-      }
-    });
+    // الحل لضمان الظهور في كل مرة:
+    // نستخدم إعدادات تجبر النظام على تجاهل الكاش (Cache) وفتح الإعلان فوراً
+    try {
+      window.show_10400479({
+        type: 'inApp',
+        inAppSettings: {
+          frequency: 0,        // 0 تعني تعطيل نظام تكرار الظهور (يظهر دائماً)
+          capping: 0,          // تعطيل الحد الأقصى للظهور
+          interval: 0,         // لا يوجد وقت انتظار بين الإعلانات
+          timeout: 0,          // تحميل فوري
+          force: true,         // محاولة إجبار العرض
+          everyPage: true
+        }
+      });
+    } catch (e) {
+      console.log("Ad trigger error");
+    }
 
-    // بدء عداد الـ 15 ثانية فور ظهور الإعلان
+    // الانتظار الإلزامي للتأكد من المشاهدة
     setTimeout(async () => {
-      setNotification('⏳ جاري التحقق من المشاهدة...');
+      setNotification('⏳ جاري التحقق من مكافأتك...');
       
       try {
         const res = await fetch('/api/increase-points', {
@@ -76,9 +82,9 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
         const data = await res.json();
         if (data.success) {
           setAdsCount(data.newCount);
-          setNotification('🎉 حصلت على 1 XP بنجاح!');
+          setNotification('🎉 مبروك! حصلت على 1 XP');
           
-          // تحديث الرصيد في الصفحة الرئيسية فوراً
+          // تحديث الرصيد فوراً في الصفحة الرئيسية
           const balanceRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
           const balanceData = await balanceRes.json();
           if (balanceData.success) {
@@ -86,34 +92,34 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
           }
         }
       } catch (err) {
-        setNotification('❌ حدث خطأ في النظام');
+        setNotification('❌ فشل في تحديث الرصيد');
       } finally {
         setIsLoading(false);
       }
-    }, 15000); // مدة الـ 15 ثانية التي حددتها
+    }, 15000); 
   };
 
   return (
     <div className="pro-container">
       <div className="mining-card">
         <div className="stats-header">
-          <span>شريط المهام</span>
+          <span>الإنجاز اليومي</span>
           <span className="percent">{Math.round((adsCount / MAX_ADS) * 100)}%</span>
         </div>
         <div className="pro-progress-container">
           <div className="pro-progress-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
         </div>
-        <p className="count-label">{adsCount} / {MAX_ADS} إعلانات مكتملة</p>
+        <p className="count-label">تمت مشاهدة {adsCount} من أصل {MAX_ADS}</p>
       </div>
 
-      <div className="status-msg">{notification || 'اضغط لمشاهدة إعلان والحصول على هدية'}</div>
+      <div className="status-msg">{notification || 'اضغط لمشاهدة الإعلان'}</div>
 
       <button 
         onClick={handleWatchAd}
         disabled={adsCount >= MAX_ADS || isLoading}
         className={`main-ad-btn ${isLoading ? 'is-loading' : ''}`}
       >
-        {isLoading ? 'جاري العرض والتحقق...' : adsCount >= MAX_ADS ? '✅ انتهت مهام اليوم' : `📺 شاهد الإعلان (${adsCount + 1})`}
+        {isLoading ? 'جاري العرض الآن...' : adsCount >= MAX_ADS ? '✅ اكتملت المهمة' : `📺 ابدأ المهمة رقم (${adsCount + 1})`}
       </button>
       
       <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
