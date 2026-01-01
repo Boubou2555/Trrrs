@@ -11,7 +11,7 @@ export default function Home() {
   const [products, setProducts] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
 
-  // 1. دالة جلب بيانات المستخدم والمنتجات
+  // جلب البيانات الأساسية
   const fetchData = useCallback(async (tgUser: any) => {
     try {
       const res = await fetch('/api/increase-points', {
@@ -20,85 +20,70 @@ export default function Home() {
         body: JSON.stringify(tgUser),
       })
       const data = await res.json()
-      setUser({ ...tgUser, points: data.points || 0 })
+      if (data.success) {
+        setUser({ ...tgUser, points: data.points || 0 })
+      }
       
-      // قائمة المنتجات الأصلية
       setProducts([
         { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png", category: "باونتي" },
         { id: 2, title: "حساب جواهر 5000 ايفون", price: 170, imageUrl: "https://i.postimg.cc/k51fQRb3/New-Project-40-321-E54-A.png", category: "باونتي" },
-        { id: 3, title: "حساب جواهر + كوزان اندرويد", price: 200, imageUrl: "https://i.postimg.cc/fL1CF4C8/New-Project-40-FE9627-F.png", category: "باونتي" },
         { id: 4, title: "تحويل فليكسي", price: 50, imageUrl: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png", category: "تحويل" },
         { id: 5, title: "عضوية شهرية ", price: 600, imageUrl: "https://i.postimg.cc/DzZcwfYC/New-Project-40-8383-F74.png", category: "شحن" }
       ])
     } catch (e) {
-      console.error("Fetch error")
+      console.error("Error fetching user data");
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // 2. دالة جلب سجل العمليات من قاعدة البيانات
+  // جلب السجل عند الضغط على تبويب السجل
   const fetchHistory = useCallback(async () => {
     if (!user?.id) return
     try {
       const res = await fetch(`/api/increase-points?telegramId=${user.id}`)
       const data = await res.json()
-      if (data.success && data.history) {
-        setHistory(data.history)
-      }
+      if (data.success) setHistory(data.history || [])
     } catch (e) {
-      console.error("History fetch error")
+      console.error("Error fetching history");
     }
   }, [user?.id])
 
-  // التحميل الأولي عند فتح التطبيق
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
+      tg.ready()
       fetchData(tg.initDataUnsafe.user)
     }
   }, [fetchData])
 
-  // جلب السجل عند الانتقال لتبويب السجل
   useEffect(() => {
-    if (activeTab === 'history') {
-      fetchHistory()
-    }
+    if (activeTab === 'history') fetchHistory()
   }, [activeTab, fetchHistory])
 
-  // 3. دالة الشراء مع تسجيل الطلب
   const handlePurchase = (product: any) => {
     const tg = (window as any).Telegram?.WebApp
-    if (!user || !tg) return
-
     if (user.points < product.price) {
-      tg.showAlert(`❌ رصيدك غير كافٍ! تحتاج إلى ${product.price} XP.`)
+      tg.showAlert('❌ رصيدك لا يكفي لشراء هذا المنتج');
       return
     }
 
-    tg.showConfirm(`هل أنت متأكد من شراء "${product.title}" مقابل ${product.price} XP؟`, async (confirmed) => {
+    tg.showConfirm(`شراء ${product.title} مقابل ${product.price} XP؟`, async (confirmed) => {
       if (confirmed) {
-        try {
-          const res = await fetch('/api/increase-points', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              telegramId: user.id, 
-              action: 'purchase_product', 
-              price: product.price,
-              productTitle: product.title 
-            }),
-          })
-          const data = await res.json()
-
-          if (data.success) {
-            setUser((prev: any) => ({ ...prev, points: data.newPoints }))
-            tg.showAlert('✅ تم إرسال الطلب بنجاح! راجع تبويب السجل لمتابعة الحالة.')
-          } else {
-            tg.showAlert('❌ فشل الطلب: ' + data.message)
-          }
-        } catch (e) {
-          tg.showAlert('❌ حدث خطأ أثناء الاتصال بالسيرفر')
+        const res = await fetch('/api/increase-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            telegramId: user.id, 
+            action: 'purchase_product', 
+            price: product.price,
+            productTitle: product.title 
+          }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setUser((prev: any) => ({ ...prev, points: data.newPoints }))
+          tg.showAlert('✅ تم الطلب! راجع السجل لمتابعة الحالة.')
         }
       }
     })
@@ -108,30 +93,27 @@ export default function Home() {
 
   return (
     <div className="main-container">
-      {/* رأس الصفحة ورصيد المستخدم */}
       <div className="balance-card">
         <div className="balance-label">رصيدك الحالي</div>
         <div className="balance-amount">{user?.points?.toLocaleString()} <span>XP</span></div>
       </div>
 
-      {/* التبويبات */}
       <div className="tabs-container">
-        <button onClick={() => setActiveTab('products')} className={activeTab === 'products' ? 'active' : ''}>المنتجات</button>
-        <button onClick={() => setActiveTab('tasks')} className={activeTab === 'tasks' ? 'active' : ''}>الهدية</button>
-        <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'active' : ''}>السجل</button>
+        <button onClick={() => setActiveTab('products')} className={activeTab === 'products' ? 'tab-button active' : 'tab-button'}>المنتجات</button>
+        <button onClick={() => setActiveTab('tasks')} className={activeTab === 'tasks' ? 'tab-button active' : 'tab-button'}>الهدية</button>
+        <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'tab-button active' : 'tab-button'}>السجل</button>
       </div>
 
-      {/* محتوى المنتجات */}
       {activeTab === 'products' && (
         <div className="products-grid">
           {products.map(p => (
             <div key={p.id} className="product-card" onClick={() => handlePurchase(p)}>
               <div className="product-image-container">
-                <img src={p.imageUrl} alt={p.title} />
+                <img src={p.imageUrl} alt="" className="product-image" />
                 <div className="product-badge">{p.category}</div>
               </div>
               <div className="product-info">
-                <h3>{p.title}</h3>
+                <h3 className="product-title">{p.title}</h3>
                 <div className="product-price">{p.price} XP</div>
               </div>
             </div>
@@ -139,29 +121,22 @@ export default function Home() {
         </div>
       )}
 
-      {/* محتوى المهام (الإعلانات) */}
       {activeTab === 'tasks' && (
         <Page1 onPointsUpdate={(pts) => setUser((u: any) => ({ ...u, points: pts }))} />
       )}
 
-      {/* محتوى سجل العمليات */}
       {activeTab === 'history' && (
         <div className="history-list">
-          <h2 className="history-title">آخر العمليات</h2>
-          {history.length === 0 ? (
-            <div className="empty-history">
-              <p>لا توجد عمليات مسجلة حالياً</p>
-            </div>
-          ) : (
+          {history.length === 0 ? <div className="empty-history"><p>السجل فارغ</p></div> : 
             history.map((item: any) => (
-              <div key={item._id} className="history-item">
+              <div key={item.id} className="history-item">
                 <div className="history-left">
                   <span className={`status-icon ${item.status}`}>
                     {item.status === 'pending' ? '⏳' : item.status === 'completed' ? '✅' : '❌'}
                   </span>
                   <div className="history-details">
                     <p className="history-desc">{item.description}</p>
-                    <p className="history-date">{new Date(item.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                    <p className="history-date">{new Date(item.createdAt).toLocaleDateString('ar-EG')}</p>
                   </div>
                 </div>
                 <div className={`history-amount ${item.amount > 0 ? 'plus' : 'minus'}`}>
@@ -169,13 +144,10 @@ export default function Home() {
                 </div>
               </div>
             ))
-          )}
+          }
         </div>
       )}
-
-      <div className="footer">
-        <p>Developed By <span>Borhane San</span></p>
-      </div>
+      <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
 }
