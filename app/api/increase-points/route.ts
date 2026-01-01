@@ -2,88 +2,91 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+const ADMIN_ID = 123456789; // ⚠️ ضع ID تليجرام الخاص بك هنا
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const rawId = body.telegramId || body.id;
-        const telegramId = parseInt(rawId);
+        const { action, telegramId, amount, transactionId, adminId } = body;
 
-        if (isNaN(telegramId)) {
-            return NextResponse.json({ success: false, message: "ID غير صالح" });
+        // --- وظائف المسؤول ---
+        if (adminId === ADMIN_ID) {
+            // 1. إضافة نقاط يدوياً لمستخدم
+            if (action === 'admin_add_points') {
+                const updated = await prisma.user.update({
+                    where: { telegramId: parseInt(telegramId) },
+                    data: { points: { increment: parseInt(amount) } }
+                });
+                return NextResponse.json({ success: true, newPoints: updated.points });
+            }
+            // 2. تغيير حالة الطلب إلى مكتمل
+            if (action === 'complete_order') {
+                await prisma.transaction.update({
+                    where: { id: transactionId },
+                    data: { status: 'completed' }
+                });
+                return NextResponse.json({ success: true });
+            }
         }
 
-        const { action, price, productTitle } = body;
+        // --- وظائف المستخدم العادي ---
+        const rawId = body.telegramId || body.id;
+        const userId = parseInt(rawId);
 
-        // 1. كسب نقاط من إعلان
         if (action === 'watch_ad') {
             const user = await prisma.user.update({
-                where: { telegramId },
+                where: { telegramId: userId },
                 data: { points: { increment: 1 }, adsCount: { increment: 1 } }
             });
-
             await prisma.transaction.create({
-                data: {
-                    telegramId,
-                    type: 'ad',
-                    description: 'مشاهدة إعلان مكافأة',
-                    amount: 1,
-                    status: 'completed'
-                }
+                data: { telegramId: userId, type: 'ad', description: 'مكافأة إعلان', amount: 1, status: 'completed' }
             });
-
             return NextResponse.json({ success: true, points: user.points, newPoints: user.points, newCount: user.adsCount });
         }
 
-        // 2. شراء منتج
         if (action === 'purchase_product') {
-            const user = await prisma.user.findUnique({ where: { telegramId } });
-            if (!user || user.points < price) return NextResponse.json({ success: false, message: "رصيد غير كافٍ" });
-
-            const updatedUser = await prisma.user.update({
-                where: { telegramId },
+            const { price, productTitle } = body;
+            const user = await prisma.user.update({
+                where: { telegramId: userId },
                 data: { points: { decrement: price } }
             });
-
             await prisma.transaction.create({
-                data: {
-                    telegramId,
-                    type: 'purchase',
-                    description: `شراء: ${productTitle}`,
-                    amount: -price,
-                    status: 'pending'
-                }
+                data: { telegramId: userId, type: 'purchase', description: `شراء: ${productTitle}`, amount: -price, status: 'pending' }
             });
-
-            return NextResponse.json({ success: true, newPoints: updatedUser.points });
+            return NextResponse.json({ success: true, newPoints: user.points });
         }
 
-        // 3. الدخول الأولي
+        // الدخول الأولي
         const user = await prisma.user.upsert({
-            where: { telegramId },
-            update: { username: body.username, firstName: body.first_name, photoUrl: body.photo_url },
-            create: { telegramId, username: body.username, firstName: body.first_name, photoUrl: body.photo_url, points: 0, adsCount: 0 }
+            where: { telegramId: userId },
+            update: { username: body.username, firstName: body.first_name },
+            create: { telegramId: userId, username: body.username, firstName: body.first_name, points: 0 }
         });
-
         return NextResponse.json({ success: true, points: user.points, count: user.adsCount });
 
-    } catch (e) {
-        console.error(e);
-        return NextResponse.json({ success: false, message: "Error" });
-    }
+    } catch (e) { return NextResponse.json({ success: false }); }
 }
 
 export async function GET(req: Request) {
-    try {
-        const { searchParams } = new URL(req.url);
-        const telegramId = parseInt(searchParams.get('telegramId') || "");
-        if (isNaN(telegramId)) return NextResponse.json({ success: false });
+    const { searchParams } = new URL(req.url);
+    const userId = parseInt(searchParams.get('telegramId') || "0");
+    const adminId = parseInt(searchParams.get('adminId') || "0");
 
+    try {
+        // إذا كان المسؤول يطلب البيانات
+        if (adminId === ADMIN_ID) {
+            const pendingOrders = await prisma.transaction.findMany({
+                where: { status: 'pending' },
+                orderBy: { createdAt: 'desc' }
+            });
+            return NextResponse.json({ success: true, orders: pendingOrders });
+        }
+        // جلب سجل المستخدم العادي
         const history = await prisma.transaction.findMany({
-            where: { telegramId },
+            where: { telegramId: userId },
             orderBy: { createdAt: 'desc' },
-            take: 15
+            take: 20
         });
-        return NextResponse.json({ success: true, history });
+        return NextResponse.json({ success: true, history, count: (await prisma.user.findUnique({where:{telegramId:userId}}))?.adsCount });
     } catch (e) { return NextResponse.json({ success: false }); }
 }
