@@ -33,19 +33,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [isBanned, setIsBanned] = useState(false)
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp
-      tg.ready()
-      tg.expand()
-      if (tg.initDataUnsafe.user) {
-        fetchUserData(tg.initDataUnsafe.user)
-      } else {
-        setError('يرجى فتح البوت من تليجرام')
-        setLoading(false)
-      }
-    }
-  }, [])
+  // دالة لتحديث الرصيد يدوياً من المكونات الفرعية
+  const updateUserPoints = (newPoints: number) => {
+    setUser(prev => prev ? { ...prev, points: newPoints } : null)
+  }
 
   const fetchUserData = useCallback(async (tgUser: any) => {
     try {
@@ -76,6 +67,20 @@ export default function Home() {
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp
+      tg.ready()
+      tg.expand()
+      if (tg.initDataUnsafe.user) {
+        fetchUserData(tg.initDataUnsafe.user)
+      } else {
+        setError('يرجى فتح البوت من تليجرام')
+        setLoading(false)
+      }
+    }
+  }, [fetchUserData])
 
   const fetchProducts = () => {
     const mockProducts: Product[] = [
@@ -110,7 +115,7 @@ export default function Home() {
           const data = await res.json()
 
           if (data.success) {
-            setUser(prev => prev ? { ...prev, points: data.newPoints } : null)
+            updateUserPoints(data.newPoints)
             tg.showAlert('✅ تم الخصم بنجاح! تواصل مع المدير الآن.', () => {
               const msg = `طلب شراء مؤكد:\nالمنتج: ${product.title}\nالسعر: ${product.price} XP`
               tg.openTelegramLink(`https://t.me/Kharwaydo?text=${encodeURIComponent(msg)}`)
@@ -145,6 +150,7 @@ export default function Home() {
         <button className={`tab-button ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>المنتجات</button>
         <button className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>الهدية اليومية</button>
       </div>
+      
       {activeTab === 'products' ? (
         <div className="products-grid">
           {products.map(product => (
@@ -157,7 +163,11 @@ export default function Home() {
             </div>
           ))}
         </div>
-      ) : ( <Page1 /> )}
+      ) : ( 
+        /* هنا نمرر الدالة لصفحة المهام */
+        <Page1 onPointsUpdate={updateUserPoints} /> 
+      )}
+      
       <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
