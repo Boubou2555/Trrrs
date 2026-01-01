@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// موديل المستخدم (معدل ليتناسب مع احتياجات التطبيق)
+// موديل المستخدم
 model User {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   telegramId  Int      @unique
@@ -27,13 +27,24 @@ model User {
   updatedAt   DateTime @updatedAt
 }
 
-// موديل سجل العمليات (الجديد الذي سيتم ملؤه تلقائياً)
+// موديل سجل العمليات
 model Transaction {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   telegramId  Int      // ربط العملية برقم تليجرام المستخدم
-  type        String   // نوع العملية: 'ad' (إعلان) أو 'purchase' (شراء) أو 'admin' (يدوي)
-  description String   // وصف: مثلاً "شراء حساب جواهر" أو "مكافأة إعلان"
-  amount      Int      // القيمة: موجبة للكسب وسالبة للخصم
+  type        String   // نوع العملية: 'ad', 'purchase', 'admin'
+  description String   // وصف العملية
+  amount      Int      // القيمة (موجبة أو سالبة)
   status      String   @default("completed") // الحالة: 'pending', 'completed', 'rejected'
+  createdAt   DateTime @default(now())
+}
+
+// موديل الإشعارات (المطلوب الجديد)
+model Notification {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId  Int      // الـ ID الخاص بالمستخدم المستلم
+  title       String   // عنوان الإشعار
+  message     String   // نص الرسالة
+  iconUrl     String   @default("https://cdn-icons-png.flaticon.com/512/3119/3119338.png") // أيقونة افتراضية (جرس)
+  isRead      Boolean  @default(false) // حالة القراءة للنقطة الحمراء
   createdAt   DateTime @default(now())
 }
