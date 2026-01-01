@@ -21,6 +21,47 @@ export default function Home() {
     setUser((prev: any) => prev ? { ...prev, points: newPoints } : null)
   }
 
+  // دالة الشراء التي كانت مفقودة
+  const handlePurchase = async (product: any) => {
+    const tg = window.Telegram?.WebApp
+    if (!user || !tg) return
+
+    if (user.points < product.price) {
+      // @ts-ignore
+      tg.showPopup({ 
+        title: 'رصيد غير كافٍ', 
+        message: `سعر المنتج ${product.price} XP ورصيدك ${user.points} XP.`, 
+        buttons: [{ type: 'ok' }] 
+      })
+      return
+    }
+
+    tg.showConfirm(`هل أنت متأكد من شراء "${product.title}" مقابل ${product.price} XP؟`, async (confirmed) => {
+      if (confirmed) {
+        try {
+          const res = await fetch('/api/increase-points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId: user.id, action: 'purchase_product', price: product.price }),
+          })
+          const data = await res.json()
+
+          if (data.success) {
+            updateBalance(data.newPoints)
+            tg.showAlert('✅ تم الخصم بنجاح! تواصل مع المدير الآن.', () => {
+              const msg = `طلب شراء مؤكد:\nالمنتج: ${product.title}\nالسعر: ${product.price} XP`
+              tg.openTelegramLink(`https://t.me/Kharwaydo?text=${encodeURIComponent(msg)}`)
+            })
+          } else {
+            tg.showAlert('❌ فشل الخصم: ' + (data.message || 'خطأ غير معروف'))
+          }
+        } catch (e) {
+          tg.showAlert('❌ حدث خطأ أثناء عملية الاتصال')
+        }
+      }
+    })
+  }
+
   const fetchUserData = useCallback(async (tgUser: any) => {
     try {
       const res = await fetch('/api/increase-points', {
@@ -37,7 +78,6 @@ export default function Home() {
         photoUrl: tgUser.photo_url
       })
       
-      // إعادة قائمة المنتجات الأصلية
       setProducts([
         { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png", category: "باونتي" },
         { id: 2, title: "حساب جواهر 5000 ايفون", price: 170, imageUrl: "https://i.postimg.cc/k51fQRb3/New-Project-40-321-E54-A.png", category: "باونتي" },
@@ -46,7 +86,7 @@ export default function Home() {
         { id: 5, title: "عضوية شهرية ", price: 600, imageUrl: "https://i.postimg.cc/DzZcwfYC/New-Project-40-8383-F74.png", category: "شحن" }
       ])
     } catch (err) {
-      console.error("Error")
+      console.error("Error fetching data")
     } finally {
       setLoading(false)
     }
@@ -86,7 +126,7 @@ export default function Home() {
       {activeTab === 'products' ? (
         <div className="products-grid">
           {products.map(product => (
-            <div key={product.id} className="product-card">
+            <div key={product.id} className="product-card" onClick={() => handlePurchase(product)}>
               <div className="product-image-container">
                 <img src={product.imageUrl} alt={product.title} className="product-image" />
                 <div className="product-badge">{product.category}</div>
@@ -101,7 +141,6 @@ export default function Home() {
       ) : ( 
         <Page1 onPointsUpdate={updateBalance} /> 
       )}
-
       <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
