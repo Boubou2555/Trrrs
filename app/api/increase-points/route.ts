@@ -4,13 +4,23 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const ADMIN_ID = 5149849049;
-const MAX_ADS = 10; // الحد الأقصى للإعلانات
+const MAX_ADS = 10;
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { action, telegramId, amount, transactionId, adminId, reason, status, title, message } = body;
         const userId = parseInt(telegramId || body.id);
+
+        // --- وظائف المستخدم (قراءة الإشعارات) ---
+        // تم وضعها هنا لتكون متاحة للمستخدم عند فتح الجرس
+        if (action === 'read_notifs') {
+            await prisma.notification.updateMany({
+                where: { telegramId: userId, isRead: false },
+                data: { isRead: true }
+            });
+            return NextResponse.json({ success: true });
+        }
 
         // --- لوحة التحكم (للمسؤول فقط) ---
         if (adminId === ADMIN_ID) {
@@ -35,44 +45,25 @@ export async function POST(req: Request) {
                 });
                 return NextResponse.json({ success: true });
             }
-            // دالة قراءة الإشعارات (لإخفاء النقطة الحمراء)
-            if (action === 'read_notifs') {
-                await prisma.notification.updateMany({
-                    where: { telegramId: userId, isRead: false },
-                    data: { isRead: true }
-                });
-                return NextResponse.json({ success: true });
-            }
         }
 
-        // --- فحص الحظر (للمستخدم العادي) ---
+        // --- فحص الحظر ---
         const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
         if (checkUser?.status === 1 && action !== 'login_check') {
             return NextResponse.json({ success: false, banned: true, reason: checkUser.banReason });
         }
 
-        // --- إضافة نقاط الإعلانات وتحديث عداد adsCount ---
+        // --- إضافة نقاط الإعلانات مع تحديث adsCount ---
         if (action === 'watch_ad') {
-            // التحقق من السيرفر أولاً
             if (checkUser && checkUser.adsCount >= MAX_ADS) {
-                return NextResponse.json({ success: false, message: 'لقد وصلت للحد الأقصى اليوم', newAdsCount: checkUser.adsCount });
+                return NextResponse.json({ success: false, message: 'وصلت للحد الأقصى' });
             }
-
-            const updatedUser = await prisma.user.update({ 
+            const user = await prisma.user.update({ 
                 where: { telegramId: userId }, 
-                data: { 
-                    points: { increment: 1 },
-                    adsCount: { increment: 1 } // تحديث الحقل الموجود في صورتك
-                } 
+                data: { points: { increment: 1 }, adsCount: { increment: 1 } } 
             });
-
             await prisma.transaction.create({ data: { telegramId: userId, type: 'ad', description: 'مشاهدة إعلان', amount: 1, status: 'completed' } });
-            
-            return NextResponse.json({ 
-                success: true, 
-                newPoints: updatedUser.points, 
-                newAdsCount: updatedUser.adsCount 
-            });
+            return NextResponse.json({ success: true, newPoints: user.points, newAdsCount: user.adsCount });
         }
 
         if (action === 'purchase_product') {
@@ -81,7 +72,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, newPoints: user.points });
         }
 
-        // تسجيل الدخول الأولي
+        // تسجيل الدخول
         const user = await prisma.user.upsert({
             where: { telegramId: userId },
             update: { username: body.username, firstName: body.first_name, photoUrl: body.photo_url },
@@ -92,26 +83,19 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-    try {
-        const { searchParams } = new URL(req.url);
-        const userId = parseInt(searchParams.get('telegramId') || "0");
-        const adminId = parseInt(searchParams.get('adminId') || "0");
+    const { searchParams } = new URL(req.url);
+    const userId = parseInt(searchParams.get('telegramId') || "0");
+    const adminId = parseInt(searchParams.get('adminId') || "0");
 
-        if (adminId === ADMIN_ID) {
-            const orders = await prisma.transaction.findMany({ where: { status: 'pending' }, orderBy: { createdAt: 'desc' } });
-            const users = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
-            return NextResponse.json({ success: true, orders, users });
-        }
-
-        const userData = await prisma.user.findUnique({ where: { telegramId: userId } });
-        const history = await prisma.transaction.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 20 });
-        const notifs = await prisma.notification.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 15 });
-
-        return NextResponse.json({ 
-            success: true, 
-            user: userData, // إرجاع كائن المستخدم ليشمل adsCount
-            history, 
-            notifs 
-        });
-    } catch (e) { return NextResponse.json({ success: false }); }
+    if (adminId === ADMIN_ID) {
+        const orders = await prisma.transaction.findMany({ where: { status: 'pending' }, orderBy: { createdAt: 'desc' } });
+        const users = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
+        return NextResponse.json({ success: true, orders, users });
+    }
+    
+    const userData = await prisma.user.findUnique({ where: { telegramId: userId } });
+    const history = await prisma.transaction.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 20 });
+    const notifs = await prisma.notification.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 15 });
+    
+    return NextResponse.json({ success: true, user: userData, history, notifs });
 }
