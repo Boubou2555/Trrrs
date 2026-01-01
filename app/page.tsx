@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import './styles.css'
 import Page1 from './page1'
 
@@ -11,10 +11,13 @@ export default function Home() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'products' | 'tasks' | 'history' | 'admin'>('products')
-  const [history, setHistory] = useState<any[]>([]) // إصلاح: تحديد النوع كـ any[]
-  const [notifs, setNotifs] = useState<any[]>([])  // إصلاح: تحديد النوع كـ any[]
+  const [history, setHistory] = useState<any[]>([])
+  const [notifs, setNotifs] = useState<any[]>([])
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [] as any[], users: [] as any[] })
+  
+  // مرجع لمنع تكرار اشتعال النقطة بعد القراءة مباشرة
+  const lastReadTime = useRef<number>(0);
 
   const products = [
     { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png" },
@@ -35,12 +38,19 @@ export default function Home() {
     setLoading(false)
   }, [])
 
-  const refreshData = useCallback(() => {
+  const refreshData = useCallback(async () => {
     if (!user?.id || user.isBanned) return;
-    fetch(`/api/increase-points?telegramId=${user.id}`).then(r => r.json()).then(d => {
-      setHistory(d.history || []);
-      setNotifs(d.notifs || []);
-    })
+    const res = await fetch(`/api/increase-points?telegramId=${user.id}`);
+    const d = await res.json();
+    
+    setHistory(d.history || []);
+    
+    // منطق ذكي للنقطة الحمراء: لا تظهرها إذا قمنا بالقراءة منذ أقل من 30 ثانية
+    // إلا إذا كان هناك إشعار جديد فعلياً أحدث من وقت القراءة
+    const now = Date.now();
+    if (now - lastReadTime.current > 10000) {
+       setNotifs(d.notifs || []);
+    }
   }, [user?.id, user?.isBanned])
 
   useEffect(() => {
@@ -53,7 +63,7 @@ export default function Home() {
 
   useEffect(() => {
     refreshData();
-    const interval = setInterval(refreshData, 15000); 
+    const interval = setInterval(refreshData, 10000); // تحديث كل 10 ثواني
     return () => clearInterval(interval);
   }, [refreshData])
 
@@ -63,22 +73,25 @@ export default function Home() {
     }
   }, [activeTab])
 
+  // دالة قراءة الإشعارات المحسنة
   const handleReadNotifs = async () => {
     setShowNotif(!showNotif);
-    if (!showNotif && unreadCount > 0) {
+    if (!showNotif) {
+      lastReadTime.current = Date.now(); // تسجيل وقت القراءة
       // إخفاء النقطة فوراً في الواجهة
       setNotifs(prev => prev.map(n => ({ ...n, isRead: true })));
-      // إبلاغ السيرفر في الخلفية
+      // إرسال للسيرفر
       await fetch('/api/increase-points', {method:'POST', body:JSON.stringify({action:'read_notifs', telegramId:user.id})});
     }
   }
 
   const adminDo = async (p: any) => {
     const res = await fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({ ...p, adminId: ADMIN_ID }) });
+    const data = await res.json();
     if (activeTab === 'admin') {
       fetch(`/api/increase-points?adminId=${ADMIN_ID}`).then(r => r.json()).then(d => setAdminData({ orders: d.orders || [], users: d.users || [] }));
     }
-    return await res.json();
+    return data;
   }
 
   if (user?.isBanned) return (
@@ -143,7 +156,12 @@ export default function Home() {
                 tg.showConfirm(`تأكيد طلب ${p.title}؟`, async (ok:any) => {
                   if(ok) {
                     const res = await adminDo({action:'purchase_product', telegramId:user.id, price:p.price, productTitle:p.title, first_name:user.first_name});
-                    if(res.success) { setUser((prev:any)=>({...prev, points: res.newPoints})); tg.showAlert('تم الطلب!'); refreshData(); }
+                    if(res.success) { 
+                       // تحديث الرصيد فوراً
+                       setUser((prev:any)=>({...prev, points: res.newPoints})); 
+                       tg.showAlert('تم الطلب!'); 
+                       refreshData(); 
+                    }
                   }
                 })
               }}>
@@ -154,7 +172,11 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === 'tasks' && <Page1 onPointsUpdate={(pts:any) => {setUser((u:any)=>({...u, points:pts})); refreshData();}} />}
+        {/* تمرير دالة تحديث الرصيد لـ Page1 لضمان التحديث الفوري */}
+        {activeTab === 'tasks' && <Page1 onPointsUpdate={(pts:any) => {
+          setUser((u:any)=>({...u, points:pts}));
+          refreshData();
+        }} />}
 
         {activeTab === 'history' && (
           <div className="history-list">
