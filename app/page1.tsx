@@ -18,7 +18,7 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [notification, setNotification] = useState('')
-  const MAX_ADS = 10
+  const MAX_ADS = 3
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
