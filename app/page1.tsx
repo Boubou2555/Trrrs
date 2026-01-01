@@ -9,17 +9,16 @@ declare global {
   }
 }
 
-// إضافة النوع الخاص بالـ Props لاستلام دالة التحديث من الصفحة الرئيسية
 interface Page1Props {
   onPointsUpdate: (newPoints: number) => void;
 }
 
-export default function GuaranteedAdsSystem({ onPointsUpdate }: Page1Props) {
+export default function Page1({ onPointsUpdate }: Page1Props) {
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [notification, setNotification] = useState('')
-  const MAX_ADS = 3
+  const MAX_ADS = 10
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
@@ -28,38 +27,40 @@ export default function GuaranteedAdsSystem({ onPointsUpdate }: Page1Props) {
       const userData = tg.initDataUnsafe?.user
       if (userData) {
         setUser(userData)
+        // جلب الحالة الأولية
         fetch(`/api/increase-points?telegramId=${userData.id}`)
           .then(res => res.json())
           .then(data => { 
             if (data.success) {
                 setAdsCount(data.count)
-                // تحديث الرصيد الأولي في الصفحة الرئيسية
                 onPointsUpdate(data.points)
             }
           })
       }
     }
-  }, [onPointsUpdate])
+  }, [])
 
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
     if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ جاري تهيئة النظام.. انتظر ثانية');
+      setNotification('⚠️ جاري تهيئة النظام..');
       return;
     }
 
     setIsLoading(true);
     setNotification('📺 جاري استدعاء الإعلان المدمج...');
 
+    // استدعاء الإعلان (نوع pop لضمان الظهور عند النقرة)
     window.show_10400479('pop')
       .then(async () => {
         setNotification('⏳ جاري معالجة المكافأة (15 ثانية)...');
         
-        // الانتظار الإلزامي لمدة 15 ثانية
+        // انتظار 15 ثانية حسب طلبك
         await new Promise(resolve => setTimeout(resolve, 15000));
 
         try {
+          // تحديث النقاط
           const res = await fetch('/api/increase-points', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -71,11 +72,11 @@ export default function GuaranteedAdsSystem({ onPointsUpdate }: Page1Props) {
             setAdsCount(data.newCount);
             setNotification('🎉 حصلت على 1 XP بنجاح!');
             
-            // التحديث السحري: نرسل الرصيد الجديد للصفحة الرئيسية فوراً
-            if (data.points !== undefined) {
-                onPointsUpdate(data.points);
-            } else if (data.newPoints !== undefined) {
-                onPointsUpdate(data.newPoints);
+            // جلب الرصيد الكلي الجديد لتحديث الواجهة الرئيسية فوراً
+            const balanceRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
+            const balanceData = await balanceRes.json();
+            if (balanceData.success) {
+              onPointsUpdate(balanceData.points); // تحديث الرصيد في page.tsx
             }
           }
         } catch (err) {
@@ -84,9 +85,8 @@ export default function GuaranteedAdsSystem({ onPointsUpdate }: Page1Props) {
           setIsLoading(false);
         }
       })
-      .catch((e) => {
-        console.log("Ad error, trying fallback...");
-        setNotification('❌ حاول الضغط مرة أخرى');
+      .catch(() => {
+        setNotification('❌ لم يظهر إعلان، حاول مجدداً');
         setIsLoading(false);
       });
   };
