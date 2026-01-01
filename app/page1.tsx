@@ -9,7 +9,12 @@ declare global {
   }
 }
 
-export default function GuaranteedAdsSystem() {
+// إضافة النوع الخاص بالـ Props لاستلام دالة التحديث من الصفحة الرئيسية
+interface Page1Props {
+  onPointsUpdate: (newPoints: number) => void;
+}
+
+export default function GuaranteedAdsSystem({ onPointsUpdate }: Page1Props) {
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -25,15 +30,20 @@ export default function GuaranteedAdsSystem() {
         setUser(userData)
         fetch(`/api/increase-points?telegramId=${userData.id}`)
           .then(res => res.json())
-          .then(data => { if (data.success) setAdsCount(data.count) })
+          .then(data => { 
+            if (data.success) {
+                setAdsCount(data.count)
+                // تحديث الرصيد الأولي في الصفحة الرئيسية
+                onPointsUpdate(data.points)
+            }
+          })
       }
     }
-  }, [])
+  }, [onPointsUpdate])
 
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
-    // التأكد من أن السكربت محمل في الصفحة
     if (typeof window.show_10400479 !== 'function') {
       setNotification('⚠️ جاري تهيئة النظام.. انتظر ثانية');
       return;
@@ -42,13 +52,11 @@ export default function GuaranteedAdsSystem() {
     setIsLoading(true);
     setNotification('📺 جاري استدعاء الإعلان المدمج...');
 
-    // الحل لظهور الإعلان عند كل نقرة:
-    // نستخدم "pop" لأنه الأكثر استجابة للنقرات المباشرة داخل تليجرام
     window.show_10400479('pop')
       .then(async () => {
-        // بمجرد إغلاق الإعلان، ننتظر الـ 15 ثانية التي طلبتها للتحقق
         setNotification('⏳ جاري معالجة المكافأة (15 ثانية)...');
         
+        // الانتظار الإلزامي لمدة 15 ثانية
         await new Promise(resolve => setTimeout(resolve, 15000));
 
         try {
@@ -62,6 +70,13 @@ export default function GuaranteedAdsSystem() {
           if (data.success) {
             setAdsCount(data.newCount);
             setNotification('🎉 حصلت على 1 XP بنجاح!');
+            
+            // التحديث السحري: نرسل الرصيد الجديد للصفحة الرئيسية فوراً
+            if (data.points !== undefined) {
+                onPointsUpdate(data.points);
+            } else if (data.newPoints !== undefined) {
+                onPointsUpdate(data.newPoints);
+            }
           }
         } catch (err) {
           setNotification('❌ فشل تحديث النقاط');
@@ -70,10 +85,7 @@ export default function GuaranteedAdsSystem() {
         }
       })
       .catch((e) => {
-        // إذا لم يظهر إعلان، نقوم بإعادة المحاولة بنوع "inApp" كخيار بديل
-        console.log("Switching to fallback ad type...");
-        window.show_10400479({ type: 'inApp', inAppSettings: { timeout: 0, interval: 0, frequency: 9 } });
-        
+        console.log("Ad error, trying fallback...");
         setNotification('❌ حاول الضغط مرة أخرى');
         setIsLoading(false);
       });
@@ -101,19 +113,6 @@ export default function GuaranteedAdsSystem() {
       >
         {isLoading ? 'جاري المعالجة..' : adsCount >= MAX_ADS ? '✅ انتهت مهام اليوم' : `📺 شاهد الإعلان رقم ${adsCount + 1}`}
       </button>
-
-      <style jsx>{`
-        .pro-container { padding: 20px; direction: rtl; color: white; text-align: center; }
-        .mining-card { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 1px solid #333; margin-bottom: 20px; }
-        .pro-progress-container { background: #000; height: 12px; border-radius: 6px; overflow: hidden; margin: 15px 0; border: 1px solid #444; }
-        .pro-progress-fill { background: linear-gradient(90deg, #00c6ff, #0072ff); height: 100%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .status-msg { margin: 15px 0; color: #00c6ff; font-size: 14px; min-height: 20px; font-weight: bold; }
-        .main-ad-btn { 
-          width: 100%; padding: 18px; border-radius: 15px; border: none; 
-          background: #0072ff; color: white; font-weight: bold; font-size: 16px; cursor: pointer;
-          box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
-        }
-        .main-ad-btn:disabled { background: #333; box-shadow: none; color: #666; }
-      `}</style>
     </div>
   )
+}
