@@ -1,24 +1,39 @@
-datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// موديل المستخدم (معدل ليتناسب مع احتياجات التطبيق)
 model User {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  telegramId Int      @unique
-  username   String?
-  firstName  String?
-  lastName   String?
-  points     Int      @default(0)
-  status     Int      @default(0)  // 0 = غير محظور، 1 = محظور
-  banReason  String?  
-  photoUrl   String?
-  adsCount   Int      @default(0)    // عدد الإعلانات المشاهدة اليوم
-  lastAdDate DateTime @default(now()) // تاريخ آخر إعلان لتصفير العداد
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId  Int      @unique
+  username    String?
+  firstName   String?
+  lastName    String?
+  points      Int      @default(0)
+  status      Int      @default(0)  // 0 = نشط، 1 = محظور
+  banReason   String?  
+  photoUrl    String?
+  adsCount    Int      @default(0)    // عدد الإعلانات المشاهدة اليوم
+  lastAdDate  DateTime @default(now()) // لتصفير العداد يومياً
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// موديل سجل العمليات (الجديد الذي سيتم ملؤه تلقائياً)
+model Transaction {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId  Int      // ربط العملية برقم تليجرام المستخدم
+  type        String   // نوع العملية: 'ad' (إعلان) أو 'purchase' (شراء) أو 'admin' (يدوي)
+  description String   // وصف: مثلاً "شراء حساب جواهر" أو "مكافأة إعلان"
+  amount      Int      // القيمة: موجبة للكسب وسالبة للخصم
+  status      String   @default("completed") // الحالة: 'pending', 'completed', 'rejected'
+  createdAt   DateTime @default(now())
 }
