@@ -5,7 +5,7 @@ import './task.css'
 
 declare global {
   interface Window {
-    show_10400479?: (params: any) => Promise<void>;
+    show_10400479?: (params: any) => void; // تم تغييرها لتناسب نمط In-App
   }
 }
 
@@ -18,7 +18,7 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [notification, setNotification] = useState('')
-  const MAX_ADS = 5
+  const MAX_ADS = 3
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
@@ -27,7 +27,6 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
       const userData = tg.initDataUnsafe?.user
       if (userData) {
         setUser(userData)
-        // جلب الحالة الأولية
         fetch(`/api/increase-points?telegramId=${userData.id}`)
           .then(res => res.json())
           .then(data => { 
@@ -44,51 +43,54 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
     if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ جاري تهيئة النظام..');
+      setNotification('⚠️ النظام يستعد..');
       return;
     }
 
     setIsLoading(true);
-    setNotification('📺 جاري استدعاء الإعلان المدمج...');
+    setNotification('📺 جاري عرض الإعلان المدمج...');
 
-    // استدعاء الإعلان (نوع pop لضمان الظهور عند النقرة)
-    window.show_10400479('pop')
-      .then(async () => {
-        setNotification('⏳ جاري معالجة المكافأة (15 ثانية)...');
+    // التعديل الجوهري: استدعاء الإعلان داخل التطبيق (In-App)
+    window.show_10400479({
+      type: 'inApp',
+      inAppSettings: {
+        frequency: 1,      // إظهار في كل مرة
+        capping: 0.1,      // تقليل القيود
+        interval: 0,       // لا يوجد وقت انتظار بين الإعلانات
+        timeout: 0,        // تحميل فوري
+        everyPage: false
+      }
+    });
+
+    // بدء عداد الـ 15 ثانية فور ظهور الإعلان
+    setTimeout(async () => {
+      setNotification('⏳ جاري التحقق من المشاهدة...');
+      
+      try {
+        const res = await fetch('/api/increase-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: user.id, action: 'watch_ad' }),
+        });
         
-        // انتظار 15 ثانية حسب طلبك
-        await new Promise(resolve => setTimeout(resolve, 15000));
-
-        try {
-          // تحديث النقاط
-          const res = await fetch('/api/increase-points', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: user.id, action: 'watch_ad' }),
-          });
+        const data = await res.json();
+        if (data.success) {
+          setAdsCount(data.newCount);
+          setNotification('🎉 حصلت على 1 XP بنجاح!');
           
-          const data = await res.json();
-          if (data.success) {
-            setAdsCount(data.newCount);
-            setNotification('🎉 حصلت على 1 XP بنجاح!');
-            
-            // جلب الرصيد الكلي الجديد لتحديث الواجهة الرئيسية فوراً
-            const balanceRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
-            const balanceData = await balanceRes.json();
-            if (balanceData.success) {
-              onPointsUpdate(balanceData.points); // تحديث الرصيد في page.tsx
-            }
+          // تحديث الرصيد في الصفحة الرئيسية فوراً
+          const balanceRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
+          const balanceData = await balanceRes.json();
+          if (balanceData.success) {
+            onPointsUpdate(balanceData.points);
           }
-        } catch (err) {
-          setNotification('❌ فشل تحديث النقاط');
-        } finally {
-          setIsLoading(false);
         }
-      })
-      .catch(() => {
-        setNotification('❌ لم يظهر إعلان، حاول مجدداً');
+      } catch (err) {
+        setNotification('❌ حدث خطأ في النظام');
+      } finally {
         setIsLoading(false);
-      });
+      }
+    }, 15000); // مدة الـ 15 ثانية التي حددتها
   };
 
   return (
@@ -104,15 +106,17 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
         <p className="count-label">{adsCount} / {MAX_ADS} إعلانات مكتملة</p>
       </div>
 
-      <div className="status-msg">{notification}</div>
+      <div className="status-msg">{notification || 'اضغط لمشاهدة إعلان والحصول على هدية'}</div>
 
       <button 
         onClick={handleWatchAd}
         disabled={adsCount >= MAX_ADS || isLoading}
-        className="main-ad-btn"
+        className={`main-ad-btn ${isLoading ? 'is-loading' : ''}`}
       >
-        {isLoading ? 'جاري المعالجة..' : adsCount >= MAX_ADS ? '✅ انتهت مهام اليوم' : `📺 شاهد الإعلان رقم ${adsCount + 1}`}
+        {isLoading ? 'جاري العرض والتحقق...' : adsCount >= MAX_ADS ? '✅ انتهت مهام اليوم' : `📺 شاهد الإعلان (${adsCount + 1})`}
       </button>
+      
+      <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
 }
