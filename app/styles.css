@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 :root {
@@ -34,49 +35,111 @@ body {
   background: linear-gradient(135deg, var(--darker) 0%, #161d23 100%);
 }
 
-/* --- الرأس ومعلومات المستخدم --- */
+/* --- الهيدر المطور (مع الجرس والرصيد) --- */
 .user-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
   margin-bottom: 1.5rem;
   padding: 1rem;
   background: rgba(44, 62, 80, 0.4);
   border-radius: var(--radius-md);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .user-avatar {
-  width: 55px;
-  height: 55px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 2px solid var(--primary);
   object-fit: cover;
 }
 
 .user-info { display: flex; flex-direction: column; }
-.user-name { font-size: 1.1rem; }
-.user-name span { color: var(--secondary); }
-.user-username { font-size: 0.85rem; opacity: 0.7; color: var(--secondary); }
+.user-name { font-size: 1rem; font-weight: 700; }
+.user-username { font-size: 0.75rem; opacity: 0.6; }
 
-/* --- بطاقة الرصيد --- */
-.balance-card {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  padding: 1.5rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 1.5rem;
-  text-align: center;
-  box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-.balance-label { font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; }
-.balance-amount { font-size: 2.2rem; font-weight: 700; }
-.balance-amount span { font-size: 1rem; opacity: 0.8; }
+.header-balance {
+  background: rgba(108, 92, 231, 0.2);
+  padding: 5px 12px;
+  border-radius: 20px;
+  color: var(--secondary);
+  font-weight: bold;
+  font-size: 0.9rem;
+  border: 1px solid rgba(108, 92, 231, 0.3);
+}
+
+/* --- نظام الإشعارات --- */
+.notif-bell {
+  position: relative;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.red-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--danger);
+  border-radius: 50%;
+  border: 2px solid var(--darker);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.notif-box {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  right: 0;
+  background: #2d3436;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  z-index: 1000;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.notif-item:last-child { border-bottom: none; }
+.notif-item img { width: 30px; height: 30px; object-fit: contain; }
+.notif-item b { font-size: 0.9rem; display: block; margin-bottom: 2px; }
+.notif-item p { font-size: 0.8rem; opacity: 0.7; margin: 0; line-height: 1.4; }
 
 /* --- أزرار التبويبات --- */
 .tabs-container {
-  display: flex;
+  display: grid;
   background: rgba(255, 255, 255, 0.05);
   padding: 5px;
   border-radius: 12px;
@@ -85,16 +148,16 @@ body {
 }
 
 .tab-button {
-  flex: 1;
   padding: 12px 5px;
   border: none;
   background: transparent;
   color: white;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
   border-radius: 10px;
   transition: all 0.3s ease;
+  text-align: center;
 }
 
 .tab-button.active {
@@ -118,41 +181,12 @@ body {
 }
 
 .product-card:active { transform: scale(0.97); }
-
-.product-image-container {
-  position: relative;
-  width: 100%;
-  height: 130px;
-  background: #222;
-}
-
-.product-image { width: 100%; height: 100%; object-fit: cover; }
-
-.product-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--primary);
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-  padding: 4px 10px;
-  border-radius: 20px;
-  z-index: 5;
-}
-
-.product-info { padding: 10px; text-align: center; }
-.product-title { font-size: 0.85rem; margin-bottom: 8px; height: 35px; overflow: hidden; }
-.product-price { color: var(--secondary); font-weight: 700; font-size: 0.95rem; }
+.product-image { width: 100%; height: 120px; object-fit: cover; }
+.p-info { padding: 10px; text-align: center; }
+.p-info h3 { font-size: 0.85rem; margin-bottom: 5px; }
+.p-info span { color: var(--secondary); font-weight: bold; font-size: 0.9rem; }
 
 /* --- سجل العمليات (History) --- */
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-bottom: 20px;
-}
-
 .history-item {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
@@ -160,47 +194,46 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.history-left {
+.plus { color: var(--success); font-weight: bold; }
+.minus { color: var(--danger); font-weight: bold; }
+
+/* --- لوحة الإدارة --- */
+.admin-section h4 { margin: 15px 0 10px; color: var(--primary); font-size: 0.9rem; }
+.admin-card, .admin-user-row {
+  background: rgba(255,255,255,0.03);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
-.status-icon {
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
+.admin-btns button {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  margin-right: 5px;
+  cursor: pointer;
 }
 
-.status-icon.pending { background: rgba(241, 196, 15, 0.15); color: var(--warning); }
-.status-icon.completed { background: rgba(0, 184, 148, 0.15); color: var(--success); }
-.status-icon.rejected { background: rgba(255, 118, 117, 0.15); color: var(--danger); }
+.btn-ok { background: var(--success); }
+.btn-no { background: var(--danger); }
+.btn-blue { background: var(--primary); }
 
-.history-details { display: flex; flex-direction: column; }
-.history-desc { font-size: 0.85rem; font-weight: 600; color: var(--light); margin: 0; }
-.history-date { font-size: 0.7rem; opacity: 0.5; margin: 0; }
-
-.history-amount { font-weight: bold; font-size: 0.95rem; }
-.history-amount.plus { color: var(--success); }
-.history-amount.minus { color: var(--danger); }
-
-.empty-msg { text-align: center; opacity: 0.4; padding: 40px; font-size: 0.9rem; }
+/* --- الحظر --- */
+.banned-screen {
+  text-align: center;
+  padding: 100px 20px;
+}
 
 /* --- التحميل --- */
-.loading-container {
-  height: 70vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .loading-spinner {
   width: 40px;
   height: 40px;
@@ -208,14 +241,10 @@ body {
   border-top: 3px solid var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin: 100px auto;
 }
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.footer {
-  text-align: center;
-  padding: 20px 0;
-  opacity: 0.4;
-  font-size: 0.75rem;
-}
+.footer { text-align: center; padding: 20px 0; opacity: 0.4; font-size: 0.75rem; }
 .footer span { color: var(--primary); font-weight: bold; }
