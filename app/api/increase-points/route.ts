@@ -1,90 +1,117 @@
 import { NextResponse } from 'next/server';
-import { clientPromise } from '@/lib/mongodb'; // تأكد من مسار ملف الاتصال بمونجو
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { telegramId, id, action, price, productTitle } = body;
-        const finalId = telegramId || id;
+        // تحويل الـ ID إلى رقم (Int) كما هو محدد في Prisma Schema الخاص بك
+        const rawId = body.telegramId || body.id;
+        const telegramId = parseInt(rawId);
 
-        const client = await clientPromise;
-        const db = client.db("telegram_app");
-
-        // 1. معالجة مشاهدة الإعلانات
-        if (action === 'watch_ad') {
-            // تحديث نقاط المستخدم
-            await db.collection("users").updateOne(
-                { telegramId: finalId },
-                { $inc: { points: 1, dailyAdsCount: 1 } },
-                { upsert: true }
-            );
-
-            // تسجيل العملية في السجل تلقائياً
-            await db.collection("transactions").insertOne({
-                telegramId: finalId,
-                type: 'ad',
-                description: 'مشاهدة إعلان مكافأة',
-                amount: 1,
-                status: 'completed',
-                createdAt: new Date()
-            });
-
-            const user = await db.collection("users").findOne({ telegramId: finalId });
-            return NextResponse.json({ success: true, newPoints: user.points, newCount: user.dailyAdsCount });
+        if (isNaN(telegramId)) {
+            return NextResponse.json({ success: false, message: "ID غير صالح" });
         }
 
-        // 2. معالجة شراء منتج
-        if (action === 'purchase_product') {
-            // خصم النقاط من المستخدم
-            const result = await db.collection("users").updateOne(
-                { telegramId: finalId, points: { $gte: price } },
-                { $inc: { points: -price } }
-            );
+        const { action, price, productTitle } = body;
 
-            if (result.modifiedCount === 0) {
+        // --- 1. حالة مشاهدة الإعلان ---
+        if (action === 'watch_ad') {
+            const updatedUser = await prisma.user.update({
+                where: { telegramId },
+                data: { 
+                    points: { increment: 1 },
+                    adsCount: { increment: 1 } 
+                }
+            });
+
+            // تسجيل العملية في السجل تلقائياً
+            await prisma.transaction.create({
+                data: {
+                    telegramId,
+                    type: 'ad',
+                    description: 'مشاهدة إعلان مكافأة',
+                    amount: 1,
+                    status: 'completed'
+                }
+            });
+
+            return NextResponse.json({ 
+                success: true, 
+                points: updatedUser.points, 
+                newCount: updatedUser.adsCount,
+                newPoints: updatedUser.points 
+            });
+        }
+
+        // --- 2. حالة شراء منتج ---
+        if (action === 'purchase_product') {
+            const user = await prisma.user.findUnique({ where: { telegramId } });
+            
+            if (!user || user.points < price) {
                 return NextResponse.json({ success: false, message: "رصيدك غير كافٍ" });
             }
 
-            // تسجيل عملية الشراء في السجل بحالة "pending" تلقائياً
-            const transaction = {
-                telegramId: finalId,
-                type: 'purchase',
-                description: `شراء: ${productTitle}`,
-                amount: -price,
-                status: 'pending', // ستظهر للمستخدم "قيد المعالجة"
-                createdAt: new Date(),
-                transactionId: Math.random().toString(36).substr(2, 9).toUpperCase()
-            };
+            const updatedUser = await prisma.user.update({
+                where: { telegramId },
+                data: { points: { decrement: price } }
+            });
 
-            await db.collection("transactions").insertOne(transaction);
+            // تسجيل عملية الشراء بحالة "قيد المعالجة"
+            await prisma.transaction.create({
+                data: {
+                    telegramId,
+                    type: 'purchase',
+                    description: `شراء: ${productTitle}`,
+                    amount: -price,
+                    status: 'pending'
+                }
+            });
 
-            const user = await db.collection("users").findOne({ telegramId: finalId });
-            return NextResponse.json({ success: true, newPoints: user.points });
+            return NextResponse.json({ success: true, newPoints: updatedUser.points });
         }
 
-        return NextResponse.json({ success: false, message: "Action not found" });
+        // --- 3. تسجيل الدخول الأولي (عند فتح التطبيق) ---
+        const user = await prisma.user.upsert({
+            where: { telegramId },
+            update: {
+                username: body.username,
+                firstName: body.first_name,
+                photoUrl: body.photo_url
+            },
+            create: {
+                telegramId,
+                username: body.username,
+                firstName: body.first_name,
+                photoUrl: body.photo_url,
+                points: 0,
+                adsCount: 0
+            }
+        });
+
+        return NextResponse.json({ 
+            success: true, 
+            points: user.points, 
+            count: user.adsCount 
+        });
 
     } catch (e) {
-        return NextResponse.json({ success: false, message: "Server Error" });
+        console.error("API Error:", e);
+        return NextResponse.json({ success: false, message: "Internal Server Error" });
     }
 }
 
-// دالة GET لجلب السجل لعرضه في تبويب History
+// دالة GET لجلب سجل العمليات فقط
 export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const telegramId = searchParams.get('telegramId');
+    try {
+        const { searchParams } = new URL(req.url);
+        const rawId = searchParams.get('telegramId');
+        const telegramId = parseInt(rawId || "");
 
-    if (!telegramId) return NextResponse.json({ success: false });
+        if (isNaN(telegramId)) {
+            return NextResponse.json({ success: false, message: "Invalid ID" });
+        }
 
-    const client = await clientPromise;
-    const db = client.db("telegram_app");
-
-    // جلب آخر 20 عملية للمستخدم مرتبة من الأحدث للأقدم
-    const history = await db.collection("transactions")
-        .find({ telegramId: telegramId })
-        .sort({ createdAt: -1 })
-        .limit(20)
-        .toArray();
-
-    return NextResponse.json({ success: true, history });
-}
+        const history = await prisma.transaction.findMany({
+            where: {
