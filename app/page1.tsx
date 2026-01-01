@@ -9,11 +9,7 @@ declare global {
   }
 }
 
-interface Page1Props {
-  onPointsUpdate: (newPoints: number) => void;
-}
-
-export default function Page1({ onPointsUpdate }: Page1Props) {
+export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: number) => void }) {
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -23,7 +19,6 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp
-      tg.ready()
       const userData = tg.initDataUnsafe?.user
       if (userData) {
         setUser(userData)
@@ -31,44 +26,40 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
           .then(res => res.json())
           .then(data => { 
             if (data.success) {
-                setAdsCount(data.count)
-                onPointsUpdate(data.points)
+              setAdsCount(data.count)
+              onPointsUpdate(data.points)
             }
           })
       }
     }
-  }, []);
+  }, [])
 
-  const handleWatchAd = async () => {
+  const handleWatchAd = () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
 
-    if (typeof window.show_10400479 !== 'function') {
-      setNotification('⚠️ جاري تجهيز الإعلان...');
-      return;
-    }
-
-    // 1. تفعيل حالة التحميل والمنع
     setIsLoading(true);
-    setNotification('📺 جاري عرض الإعلان...');
+    setNotification('📺 جاري عرض الإعلان المدمج...');
 
-    // 2. استدعاء الإعلان بأبسط صورة ممكنة (In-App المباشر)
-    // نمرر "inApp" فقط بدون إعدادات إضافية لمنع التداخل مع السكريبت الأساسي
-    try {
+    // استدعاء الإعلان يدوياً وبسيطاً لمنع الجنون في التكرار
+    if (typeof window.show_10400479 === 'function') {
+      try {
         window.show_10400479({
-            type: 'inApp',
-            inAppSettings: {
-                frequency: 1,
-                everyPage: false // لضمان عدم التكرار التلقائي
-            }
+          type: 'inApp',
+          inAppSettings: { frequency: 1, everyPage: false }
         });
-    } catch (e) {
-        console.error("Ad error");
+      } catch (e) { console.error("Ad block") }
     }
 
-    // 3. عداد الـ 15 ثانية - القفل التام للزر لمنع الضغط المتكرر
+    // مؤقت أمان لفك القفل لو لم يظهر الإعلان
+    const safetyReset = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        setNotification('⚠️ حاول مرة أخرى');
+      }
+    }, 20000);
+
+    // معالجة الجائزة بعد 15 ثانية
     setTimeout(async () => {
-      setNotification('⏳ جاري التحقق من مكافأتك...');
-      
       try {
         const res = await fetch('/api/increase-points', {
           method: 'POST',
@@ -78,23 +69,21 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
         
         const data = await res.json();
         if (data.success) {
+          clearTimeout(safetyReset);
           setAdsCount(data.newCount);
           setNotification('🎉 حصلت على 1 XP بنجاح!');
           
-          // تحديث الرصيد في الصفحة الرئيسية
-          const balanceRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
-          const balanceData = await balanceRes.json();
-          if (balanceData.success) {
-            onPointsUpdate(balanceData.points);
-          }
+          // تحديث الرصيد في الصفحة الرئيسية فوراً
+          const bRes = await fetch(`/api/increase-points?telegramId=${user.id}`);
+          const bData = await bRes.json();
+          if (bData.success) onPointsUpdate(bData.points);
         }
       } catch (err) {
-        setNotification('❌ خطأ في الاتصال بالسيرفر');
+        setNotification('❌ خطأ في تحديث البيانات');
       } finally {
-        // فك القفل بعد انتهاء كل شيء
         setIsLoading(false);
       }
-    }, 15000); 
+    }, 15000);
   };
 
   return (
@@ -107,20 +96,18 @@ export default function Page1({ onPointsUpdate }: Page1Props) {
         <div className="pro-progress-container">
           <div className="pro-progress-fill" style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}></div>
         </div>
-        <p className="count-label">مكتمل {adsCount} من أصل {MAX_ADS}</p>
+        <p className="count-label">مكتمل {adsCount} من {MAX_ADS} مهام</p>
       </div>
 
-      <div className="status-msg">{notification || 'اضغط لمشاهدة الإعلان'}</div>
+      <div className="status-msg">{notification || 'بانتظار مشاهدة الإعلان...'}</div>
 
       <button 
         onClick={handleWatchAd}
         disabled={adsCount >= MAX_ADS || isLoading}
         className={`main-ad-btn ${isLoading ? 'is-loading' : ''}`}
       >
-        {isLoading ? 'إعلان نشط...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : `📺 مشاهدة إعلان (${adsCount + 1})`}
+        {isLoading ? '⏳ جاري المعالجة...' : adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : `📺 شاهد الإعلان رقم ${adsCount + 1}`}
       </button>
-      
-      <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
 }
