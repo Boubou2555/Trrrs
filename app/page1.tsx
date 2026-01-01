@@ -2,45 +2,81 @@
 
 import { useEffect, useState } from 'react'
 
-export default function Page1({ onPointsUpdate }: { onPointsUpdate: (pts: number) => void }) {
+// تعريف دالة الإعلانات لـ TypeScript حتى لا يظهر خطأ أثناء الـ Build
+declare global {
+  interface Window {
+    Telegram?: any;
+    show_10400479?: () => Promise<void>;
+  }
+}
+
+export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: number) => void }) {
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [notification, setNotification] = useState('')
+  const MAX_ADS = 10 // يمكنك تغيير العدد الأقصى هنا
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
-      setUser(tg.initDataUnsafe.user)
-      fetch(`/api/increase-points?telegramId=${tg.initDataUnsafe.user.id}`)
+      const userData = tg.initDataUnsafe.user
+      setUser(userData)
+      // جلب عدد الإعلانات الحالية من قاعدة بيانات Prisma
+      fetch(`/api/increase-points?telegramId=${userData.id}`)
         .then(res => res.json())
-        .then(data => {
-          if (data.success) setAdsCount(data.count || 0)
+        .then(data => { 
+          if (data.success) setAdsCount(data.count || 0) 
         })
     }
   }, [])
 
   const handleWatchAd = async () => {
     const tg = (window as any).Telegram?.WebApp
-    if (!user) return
+    if (!user || adsCount >= MAX_ADS || isLoading) return;
 
-    try {
-      const res = await fetch('/api/increase-points', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          telegramId: user.id, 
-          action: 'watch_ad' 
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setAdsCount(data.newCount)
-        onPointsUpdate(data.points)
-        tg.showAlert('✅ حصلت على 1 XP بنجاح!')
-      }
-    } catch (e) {
-      tg.showAlert('❌ حدث خطأ أثناء تحديث النقاط')
+    // التأكد من وجود كود الإعلانات في الصفحة
+    if (typeof (window as any).show_10400479 !== 'function') {
+      setNotification('⚠️ جاري تجهيز نظام الإعلانات...');
+      return;
     }
-  }
+
+    setIsLoading(true);
+    setNotification('📺 جاري عرض الإعلان...');
+
+    // تشغيل الإعلان (Rewarded Interstitial)
+    (window as any).show_10400479()
+      .then(async () => {
+        // يتم التنفيذ بعد مشاهدة الإعلان بالكامل
+        setNotification('⏳ جاري تسجيل جائزتك...');
+        
+        try {
+          const res = await fetch('/api/increase-points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              telegramId: user.id, // نستخدم التسمية الصحيحة للسيرفر
+              action: 'watch_ad' 
+            }),
+          });
+          
+          const data = await res.json();
+          if (data.success) {
+            setAdsCount(data.newCount);
+            setNotification('🎉 حصلت على 1 XP بنجاح!');
+            onPointsUpdate(data.newPoints);
+          }
+        } catch (err) {
+          setNotification('❌ فشل تحديث النقاط في السيرفر');
+        } finally {
+          setIsLoading(false);
+        }
+      })
+      .catch((e) => {
+        setNotification('❌ تعذر عرض الإعلان حالياً');
+        setIsLoading(false);
+      });
+  };
 
   return (
     <div style={{ padding: '10px 0' }}>
@@ -48,47 +84,62 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (pts: number
         background: 'rgba(255, 255, 255, 0.05)',
         borderRadius: '15px',
         padding: '20px',
-        textAlign: 'center',
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '15px'
+        textAlign: 'center'
       }}>
-        <div style={{ fontSize: '3rem' }}>🎁</div>
-        
-        <div>
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>مكافأة الإعلانات</h3>
-          <p style={{ opacity: 0.7, fontSize: '0.9rem' }}>شاهد إعلان قصير واحصل على 1 XP</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
+          <span>شريط المهام اليومي</span>
+          <span style={{ color: '#a29bfe' }}>{Math.round((adsCount / MAX_ADS) * 100)}%</span>
         </div>
 
-        <div style={{
-          background: 'rgba(108, 92, 231, 0.1)',
-          padding: '8px 20px',
-          borderRadius: '20px',
-          fontSize: '0.85rem',
-          color: '#a29bfe',
-          border: '1px solid rgba(108, 92, 231, 0.2)'
+        {/* شريط التقدم */}
+        <div style={{ 
+          width: '100%', 
+          height: '10px', 
+          background: 'rgba(255,255,255,0.1)', 
+          borderRadius: '5px', 
+          marginBottom: '10px',
+          overflow: 'hidden'
         }}>
-          إعلانات اليوم: <strong>{adsCount}</strong>
+          <div style={{ 
+            width: `${(adsCount / MAX_ADS) * 100}%`, 
+            height: '100%', 
+            background: 'var(--primary)', 
+            transition: 'width 0.3s ease' 
+          }}></div>
+        </div>
+        
+        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '20px' }}>
+          مكتمل {adsCount} من {MAX_ADS} إعلانات
+        </p>
+
+        <div style={{ 
+          margin: '15px 0', 
+          padding: '10px', 
+          borderRadius: '10px', 
+          fontSize: '0.85rem',
+          background: notification.includes('🎉') ? 'rgba(0,184,148,0.1)' : 'rgba(255,255,255,0.03)',
+          color: notification.includes('🎉') ? '#00b894' : '#fff'
+        }}>
+          {notification || 'جاهز لعرض الإعلانات'}
         </div>
 
         <button 
-          onClick={handleWatchAd}
+          onClick={handleWatchAd} 
+          disabled={adsCount >= MAX_ADS || isLoading}
           style={{
             width: '100%',
-            padding: '14px',
+            padding: '15px',
             borderRadius: '12px',
             border: 'none',
-            background: 'var(--primary)',
-            color: 'white',
+            background: adsCount >= MAX_ADS ? '#333' : 'var(--primary)',
+            color: '#white',
             fontWeight: 'bold',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(108, 92, 231, 0.3)'
+            cursor: adsCount >= MAX_ADS ? 'not-allowed' : 'pointer',
+            boxShadow: adsCount >= MAX_ADS ? 'none' : '0 4px 15px rgba(108, 92, 231, 0.3)'
           }}
         >
-          مشاهدة الإعلان الآن
+          {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : '📺 شاهد الإعلان واربح XP'}
         </button>
       </div>
     </div>
