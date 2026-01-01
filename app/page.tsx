@@ -11,7 +11,6 @@ export default function Home() {
   const [products, setProducts] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
 
-  // جلب البيانات الأساسية
   const fetchData = useCallback(async (tgUser: any) => {
     try {
       const res = await fetch('/api/increase-points', {
@@ -20,39 +19,27 @@ export default function Home() {
         body: JSON.stringify(tgUser),
       })
       const data = await res.json()
-      if (data.success) {
-        setUser({ ...tgUser, points: data.points || 0 })
-      }
+      if (data.success) setUser({ ...tgUser, points: data.points || 0 })
       
       setProducts([
         { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png", category: "باونتي" },
-        { id: 2, title: "حساب جواهر 5000 ايفون", price: 170, imageUrl: "https://i.postimg.cc/k51fQRb3/New-Project-40-321-E54-A.png", category: "باونتي" },
         { id: 4, title: "تحويل فليكسي", price: 50, imageUrl: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png", category: "تحويل" },
         { id: 5, title: "عضوية شهرية ", price: 600, imageUrl: "https://i.postimg.cc/DzZcwfYC/New-Project-40-8383-F74.png", category: "شحن" }
       ])
-    } catch (e) {
-      console.error("Error fetching user data");
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }, [])
 
-  // جلب السجل عند الضغط على تبويب السجل
   const fetchHistory = useCallback(async () => {
     if (!user?.id) return
-    try {
-      const res = await fetch(`/api/increase-points?telegramId=${user.id}`)
-      const data = await res.json()
-      if (data.success) setHistory(data.history || [])
-    } catch (e) {
-      console.error("Error fetching history");
-    }
+    const res = await fetch(`/api/increase-points?telegramId=${user.id}`)
+    const data = await res.json()
+    if (data.success) setHistory(data.history || [])
   }, [user?.id])
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
-      tg.ready()
+      tg.ready(); tg.expand();
       fetchData(tg.initDataUnsafe.user)
     }
   }, [fetchData])
@@ -63,27 +50,19 @@ export default function Home() {
 
   const handlePurchase = (product: any) => {
     const tg = (window as any).Telegram?.WebApp
-    if (user.points < product.price) {
-      tg.showAlert('❌ رصيدك لا يكفي لشراء هذا المنتج');
-      return
-    }
+    if (user.points < product.price) return tg.showAlert('❌ رصيدك غير كافٍ')
 
-    tg.showConfirm(`شراء ${product.title} مقابل ${product.price} XP؟`, async (confirmed) => {
-      if (confirmed) {
+    tg.showConfirm(`شراء ${product.title}؟`, async (ok) => {
+      if (ok) {
         const res = await fetch('/api/increase-points', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            telegramId: user.id, 
-            action: 'purchase_product', 
-            price: product.price,
-            productTitle: product.title 
-          }),
+          body: JSON.stringify({ telegramId: user.id, action: 'purchase_product', price: product.price, productTitle: product.title }),
         })
         const data = await res.json()
         if (data.success) {
-          setUser((prev: any) => ({ ...prev, points: data.newPoints }))
-          tg.showAlert('✅ تم الطلب! راجع السجل لمتابعة الحالة.')
+          setUser((p: any) => ({ ...p, points: data.newPoints }))
+          tg.showAlert('✅ تم الطلب بنجاح!')
         }
       }
     })
@@ -99,55 +78,39 @@ export default function Home() {
       </div>
 
       <div className="tabs-container">
-        <button onClick={() => setActiveTab('products')} className={activeTab === 'products' ? 'tab-button active' : 'tab-button'}>المنتجات</button>
-        <button onClick={() => setActiveTab('tasks')} className={activeTab === 'tasks' ? 'tab-button active' : 'tab-button'}>الهدية</button>
-        <button onClick={() => setActiveTab('history')} className={activeTab === 'history' ? 'tab-button active' : 'tab-button'}>السجل</button>
+        <button onClick={() => setActiveTab('products')} className={`tab-button ${activeTab === 'products' ? 'active' : ''}`}>المنتجات</button>
+        <button onClick={() => setActiveTab('tasks')} className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`}>الهدية</button>
+        <button onClick={() => setActiveTab('history')} className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}>السجل</button>
       </div>
 
       {activeTab === 'products' && (
         <div className="products-grid">
           {products.map(p => (
             <div key={p.id} className="product-card" onClick={() => handlePurchase(p)}>
-              <div className="product-image-container">
-                <img src={p.imageUrl} alt="" className="product-image" />
-                <div className="product-badge">{p.category}</div>
-              </div>
-              <div className="product-info">
-                <h3 className="product-title">{p.title}</h3>
-                <div className="product-price">{p.price} XP</div>
-              </div>
+              <div className="product-image-container"><img src={p.imageUrl} alt="" className="product-image" /><div className="product-badge">{p.category}</div></div>
+              <div className="product-info"><h3 className="product-title">{p.title}</h3><div className="product-price">{p.price} XP</div></div>
             </div>
           ))}
         </div>
       )}
 
-      {activeTab === 'tasks' && (
-        <Page1 onPointsUpdate={(pts) => setUser((u: any) => ({ ...u, points: pts }))} />
-      )}
+      {activeTab === 'tasks' && <Page1 onPointsUpdate={(pts) => setUser((u: any) => ({ ...u, points: pts }))} />}
 
       {activeTab === 'history' && (
         <div className="history-list">
-          {history.length === 0 ? <div className="empty-history"><p>السجل فارغ</p></div> : 
+          {history.length === 0 ? <p className="empty-msg">السجل فارغ</p> : 
             history.map((item: any) => (
               <div key={item.id} className="history-item">
                 <div className="history-left">
-                  <span className={`status-icon ${item.status}`}>
-                    {item.status === 'pending' ? '⏳' : item.status === 'completed' ? '✅' : '❌'}
-                  </span>
-                  <div className="history-details">
-                    <p className="history-desc">{item.description}</p>
-                    <p className="history-date">{new Date(item.createdAt).toLocaleDateString('ar-EG')}</p>
-                  </div>
+                  <span className={`status-icon ${item.status}`}>{item.status === 'pending' ? '⏳' : '✅'}</span>
+                  <div className="history-details"><p className="history-desc">{item.description}</p><p className="history-date">{new Date(item.createdAt).toLocaleDateString('ar-EG')}</p></div>
                 </div>
-                <div className={`history-amount ${item.amount > 0 ? 'plus' : 'minus'}`}>
-                  {item.amount > 0 ? `+${item.amount}` : item.amount}
-                </div>
+                <div className={`history-amount ${item.amount > 0 ? 'plus' : 'minus'}`}>{item.amount > 0 ? `+${item.amount}` : item.amount}</div>
               </div>
             ))
           }
         </div>
       )}
-      <div className="footer"><p>Developed By <span>Borhane San</span></p></div>
     </div>
   )
 }
