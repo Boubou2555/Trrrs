@@ -1,56 +1,108 @@
-
-/* --- 1. CORE SETTINGS & RESET --- */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
+/* ==========================================
+   المتغيرات العامة
+   ========================================== */
 :root {
+  /* الألوان الأساسية */
   --primary: #6c5ce7;
+  --primary-dark: #5649c0;
+  --primary-light: #a29bfe;
   --secondary: #a29bfe;
-  --dark-bg: #1e272e;
-  --darker-bg: #0f172a;
-  --light-text: #f5f6fa;
-  --danger: #ff7675;
+  
+  /* الألوان الداكنة */
+  --bg-darker: #1e272e;
+  --bg-dark: #2d3436;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  
+  /* ألوان النص */
+  --text-light: #f5f6fa;
+  --text-muted: rgba(245, 246, 250, 0.6);
+  
+  /* ألوان الحالات */
   --success: #00b894;
-  --radius-md: 15px;
-  --glass: rgba(255, 255, 255, 0.05);
+  --danger: #ff7675;
+  --warning: #f1c40f;
+  --info: #74b9ff;
+  
+  /* الحدود والظلال */
+  --border-light: rgba(255, 255, 255, 0.1);
+  --border-lighter: rgba(255, 255, 255, 0.05);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+  
+  /* الحواف والمسافات */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 15px;
+  --radius-xl: 20px;
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  
+  /* الانتقالات */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
 }
 
+/* ==========================================
+   إعدادات عامة
+   ========================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Tajawal', sans-serif;
-  /* Ensure clicking works on all elements */
-  pointer-events: auto; 
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background-color: var(--darker-bg);
-  color: var(--light-text);
+  font-family: 'Tajawal', sans-serif;
+  background-color: var(--bg-darker);
+  color: var(--text-light);
   direction: rtl;
   overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ==========================================
+   الحاوية الرئيسية
+   ========================================== */
 .main-container {
   padding: 1rem;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background: linear-gradient(135deg, var(--bg-darker) 0%, #161d23 100%);
+  padding-bottom: 80px; /* مساحة للفوتر */
 }
 
-/* --- 2. USER HEADER (Fixed Bell & Username) --- */
+/* ==========================================
+   هيدر المستخدم
+   ========================================== */
 .user-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
-  background: rgba(30, 41, 59, 0.8);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
   margin-bottom: 1.5rem;
-  z-index: 10; /* Keep header accessible */
+  padding: 1rem;
+  background: rgba(44, 62, 80, 0.4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  transition: var(--transition-normal);
 }
 
+.user-header:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* --- جانب المستخدم --- */
 .header-left {
   display: flex;
   align-items: center;
@@ -63,136 +115,508 @@ body {
   border-radius: 50%;
   border: 2px solid var(--primary);
   object-fit: cover;
+  transition: var(--transition-normal);
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
+  border-color: var(--primary-light);
 }
 
 .user-info {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
-/* Ensure username is visible and not faint */
-.user-name { font-size: 1rem; font-weight: 700; color: #fff; }
-.user-username { font-size: 0.8rem; color: var(--secondary); opacity: 1; }
+.user-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
 
+.user-username {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* --- جانب الأدوات --- */
 .header-right {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 15px;
 }
 
 .header-balance {
-  background: var(--primary);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: bold;
-  font-size: 0.85rem;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.2), rgba(162, 155, 254, 0.2));
+  padding: 6px 14px;
+  border-radius: var(--radius-xl);
+  color: var(--primary-light);
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  transition: var(--transition-fast);
 }
 
-/* Fixed Bell Button Accessibility */
+.header-balance:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+}
+
+/* ==========================================
+   نظام الإشعارات
+   ========================================== */
 .notif-bell {
-  font-size: 1.6rem;
-  cursor: pointer;
   position: relative;
-  z-index: 20; /* High z-index to ensure it stays clickable */
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: var(--transition-fast);
+  padding: 8px;
+  border-radius: 50%;
 }
 
-/* --- 3. NOTIFICATION MODAL (Fixed Opening Issue) --- */
+.notif-bell:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: scale(1.1);
+}
+
+.notif-bell:active {
+  transform: scale(0.95);
+}
+
+.red-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 10px;
+  height: 10px;
+  background: var(--danger);
+  border-radius: 50%;
+  border: 2px solid var(--bg-darker);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(1.2); 
+    opacity: 0.6; 
+  }
+}
+
 .notif-box {
-  position: fixed;
+  position: absolute;
+  top: 80px;
+  left: 0;
+  right: 0;
+  background: var(--bg-dark);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  padding: 1rem;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+  max-height: 350px;
+  overflow-y: auto;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notif-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-lighter);
+  transition: var(--transition-fast);
+  border-radius: var(--radius-sm);
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-item:hover {
+  background: var(--bg-card);
+}
+
+.notif-item img {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.notif-item b {
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-light);
+}
+
+.notif-item p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ==========================================
+   التبويبات (Tabs)
+   ========================================== */
+.tabs-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  background: var(--bg-card);
+  padding: 6px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-button {
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(10, 15, 28, 0.98); /* Solid background to avoid background bleed */
-  z-index: 9999;
-  display: none; /* Controlled by JS: element.style.display = 'block' */
-  padding: 2rem;
-  justify-content: center;
-  align-items: center;
+  background: var(--primary);
+  opacity: 0;
+  transition: var(--transition-fast);
+  z-index: -1;
 }
 
-.notif-content {
-  width: 100%;
-  max-width: 400px;
-  background: #1e293b;
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  position: relative;
+.tab-button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-/* --- 4. PRODUCT GRID (3x3 Layout) --- */
+.tab-button.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+  transform: translateY(-2px);
+}
+
+.tab-button:active {
+  transform: translateY(0);
+}
+
+/* ==========================================
+   شبكة المنتجات
+   ========================================== */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .product-card {
-  background: var(--glass);
-  border-radius: 10px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  text-align: center;
+  border: 1px solid var(--border-light);
+  transition: var(--transition-normal);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
-.product-image { width: 100%; height: 80px; object-fit: cover; }
-.p-info h3 { font-size: 0.7rem; padding: 5px; }
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
 
-/* --- 5. HISTORY SECTION (Fixed Style) --- */
-.history-item {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
+.product-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.product-image {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  transition: var(--transition-normal);
+}
+
+.product-card:hover .product-image {
+  transform: scale(1.05);
+}
+
+.p-info {
   padding: 12px;
-  display: flex;
-  flex-direction: column; /* Stacked info for better readability */
-  gap: 5px;
-  margin-bottom: 10px;
-  border-right: 4px solid var(--primary); /* Visual indicator */
+  text-align: center;
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.history-header {
+.p-info h3 {
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.p-info span {
+  color: var(--secondary);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* ==========================================
+   سجل العمليات (History)
+   ========================================== */
+.history-item {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-lighter);
+  transition: var(--transition-fast);
 }
 
-.history-date { font-size: 0.7rem; color: var(--secondary); }
-
-/* --- 6. DEVELOPER & FOOTER (Fixed Visibility) --- */
-.footer {
-  margin-top: auto; /* Pushes footer to bottom */
-  text-align: center;
-  padding: 20px 0;
-  width: 100%;
+.history-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-light);
+  transform: translateX(-4px);
 }
 
-.dev-name {
+.history-item .plus {
+  color: var(--success);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.history-item .minus {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* ==========================================
+   لوحة الإدارة (Admin Panel)
+   ========================================== */
+.admin-section {
+  margin-top: var(--spacing-lg);
+}
+
+.admin-section h4 {
+  margin: var(--spacing-md) 0 var(--spacing-sm);
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding-right: var(--spacing-sm);
+  border-right: 3px solid var(--primary);
+}
+
+.admin-card,
+.admin-user-row {
+  background: var(--bg-card);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border-lighter);
+  transition: var(--transition-fast);
+}
+
+.admin-card:hover,
+.admin-user-row:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-light);
+}
+
+.admin-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-btns button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
   font-size: 0.85rem;
-  color: var(--light-text);
-  font-weight: 500;
-  opacity: 0.8;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-sm);
 }
 
-.dev-name span {
+.admin-btns button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-btns button:active {
+  transform: translateY(0);
+}
+
+.btn-ok {
+  background: var(--success);
+}
+
+.btn-ok:hover {
+  background: #00a383;
+}
+
+.btn-no {
+  background: var(--danger);
+}
+
+.btn-no:hover {
+  background: #ff5f5e;
+}
+
+.btn-blue {
+  background: var(--primary);
+}
+
+.btn-blue:hover {
+  background: var(--primary-dark);
+}
+
+/* ==========================================
+   شاشة الحظر
+   ========================================== */
+.banned-screen {
+  text-align: center;
+  padding: 100px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.banned-screen h2 {
+  color: var(--danger);
+  font-size: 1.8rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.banned-screen p {
+  color: var(--text-muted);
+  font-size: 1rem;
+  max-width: 400px;
+}
+
+/* ==========================================
+   التحميل (Loading)
+   ========================================== */
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border-light);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 100px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   الفوتر
+   ========================================== */
+.footer {
+  text-align: center;
+  padding: var(--spacing-lg) 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-top: var(--spacing-lg);
+}
+
+.footer span {
   color: var(--primary);
   font-weight: 700;
-  text-shadow: 0 0 10px var(--primary);
 }
 
-/* --- 7. ADMIN SECTION --- */
-.admin-user-row {
-  background: var(--glass);
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* ==========================================
+   Scrollbar مخصص
+   ========================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.admin-btns { display: flex; gap: 10px; }
-.admin-btns span { font-size: 1.2rem; cursor: pointer; }
+::-webkit-scrollbar-track {
+  background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* ==========================================
+   تحسينات للشاشات الصغيرة
+   ========================================== */
+@media (max-width: 480px) {
+  .user-header {
+    padding: 12px;
+  }
+  
+  .user-avatar {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .user-name {
+    font-size: 0.95rem;
+  }
+  
+  .header-balance {
+    font-size: 0.85rem;
+    padding: 5px 10px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .tab-button {
+    font-size: 0.8rem;
+    padding: 10px 6px;
+  }
+}
