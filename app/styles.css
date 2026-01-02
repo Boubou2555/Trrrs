@@ -1,49 +1,60 @@
-
+/* --- 1. CORE SETTINGS & VARIABLES --- */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 :root {
+  /* Main Colors */
   --primary: #6c5ce7;
+  --primary-dark: #5649c0;
   --secondary: #a29bfe;
-  --darker: #0f172a;
-  --bg-card: rgba(30, 41, 59, 0.8);
-  --light: #f8fafc;
+  --dark-bg: #1e272e;
+  --darker-bg: #0f172a; /* Improved contrast for background */
+  --light-text: #f5f6fa;
+  
+  /* Status Colors */
   --danger: #ff7675;
   --success: #00b894;
+  --warning: #f1c40f;
+  
+  /* Design Details */
   --radius-md: 15px;
-  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+  --glass-effect: rgba(255, 255, 255, 0.05);
+  --border-light: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  user-select: none;
   font-family: 'Tajawal', sans-serif;
 }
 
 body {
-  background-color: var(--darker);
-  color: var(--light);
-  direction: rtl;
-  min-height: 100vh;
+  background-color: var(--darker-bg);
+  color: var(--light-text);
+  direction: rtl; /* Maintains Arabic layout support */
+  overflow-x: hidden;
 }
 
+/* --- 2. MAIN LAYOUT CONTAINER --- */
 .main-container {
-  padding: 1rem;
-  max-width: 500px; /* العرض المثالي لتطبيقات الهاتف */
-  margin: 0 auto;
+  padding: 1.5rem;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1e293b 0%, var(--darker-bg) 100%);
 }
 
-/* --- 1. إصلاح الهيدر (الجرس والرصيد) --- */
+/* --- 3. UPDATED USER HEADER (Fixes Bell & Balance Overlap) --- */
 .user-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1.2rem;
-  background: var(--bg-card);
+  justify-content: space-between; /* Separates left (user) from right (balance/bell) */
+  margin-bottom: 2rem;
+  padding: 1.25rem;
+  background: rgba(30, 41, 59, 0.7);
   border-radius: var(--radius-md);
-  border: var(--glass-border);
-  backdrop-filter: blur(10px);
-  margin-bottom: 1.5rem;
+  border: var(--border-light);
+  backdrop-filter: blur(12px);
+  position: relative;
 }
 
 .header-left {
@@ -60,105 +71,76 @@ body {
   object-fit: cover;
 }
 
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-size: 1.1rem; font-weight: 700; }
+.user-username { font-size: 0.8rem; opacity: 0.6; }
+
+/* Right section: Keeps bell and balance separated vertically */
 .header-right {
   display: flex;
-  flex-direction: column; /* ترتيب عمودي لمنع التداخل */
-  align-items: flex-end;
-  gap: 8px;
+  flex-direction: column; 
+  align-items: flex-end; 
+  gap: 10px;
 }
 
 .header-balance {
   background: var(--primary);
-  padding: 4px 12px;
-  border-radius: 50px;
-  font-weight: bold;
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-.notif-bell {
-  font-size: 1.5rem;
-  cursor: pointer;
-  position: relative;
-  line-height: 1;
-}
-
-/* --- 2. إصلاح قسم الإدارة (البطاقات المنظمة) --- */
-.admin-user-row {
-  background: rgba(255, 255, 255, 0.05);
-  margin-bottom: 12px;
-  padding: 12px 15px;
-  border-radius: var(--radius-md);
-  display: flex;
-  justify-content: space-between; /* دفع الاسم لليمين والأزرار لليسار */
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.user-main-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.admin-username {
-  font-size: 0.95rem;
-  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
   color: #fff;
+  font-weight: bold;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
 }
 
-.admin-balance-text {
-  font-size: 0.75rem;
-  color: var(--secondary);
-}
-
-.admin-btns {
-  display: flex;
-  gap: 10px; /* مسافة بين أيقونات التحكم */
-  align-items: center;
-}
-
-.admin-btns span {
-  font-size: 1.3rem; /* تكبير الايموجي ليسهل الضغط */
+/* --- 4. NOTIFICATION SYSTEM --- */
+.notif-bell {
+  position: relative;
+  font-size: 1.6rem;
   cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
 }
 
-.admin-btns span:active { transform: scale(1.2); }
+.red-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--danger);
+  border-radius: 50%;
+  border: 2px solid var(--dark-bg);
+  animation: pulse 1.5s infinite;
+}
 
-/* --- 3. إصلاح نافذة الإشعارات (تظهر فوق كل شيء) --- */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Fixes the notification popup layering */
 .notif-box {
-  position: fixed; /* لتغطية الشاشة بالكامل */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  max-height: 80vh;
+  position: fixed; /* Changed to fixed to appear above everything */
+  top: 15%;
+  left: 5%;
+  right: 5%;
   background: #1e293b;
   border-radius: var(--radius-md);
-  border: 2px solid var(--primary);
-  z-index: 10000; /* قيمة عالية جداً لضمان ظهورها فوق الهيدر */
-  padding: 1.5rem;
-  box-shadow: 0 0 30px rgba(0,0,0,0.8);
+  border: 1px solid var(--primary);
+  padding: 1.2rem;
+  z-index: 9999;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  max-height: 400px;
   overflow-y: auto;
 }
 
-.close-notif {
-  cursor: pointer;
-  float: left;
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-}
-
-/* --- 4. التبويبات (Tabs) --- */
+/* --- 5. NAVIGATION TABS --- */
 .tabs-container {
   display: flex;
-  background: rgba(0,0,0,0.3);
-  padding: 5px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px;
   border-radius: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 2rem;
   gap: 5px;
 }
 
@@ -167,43 +149,113 @@ body {
   padding: 12px 5px;
   border: none;
   background: transparent;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.7);
   font-weight: bold;
   font-size: 0.85rem;
-  border-radius: 8px;
   cursor: pointer;
-  transition: 0.3s;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  text-align: center;
 }
 
 .tab-button.active {
   background: var(--primary);
   color: #fff;
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.2);
 }
 
-/* --- شبكة المنتجات --- */
+/* --- 6. PRODUCT GRID (Responsive Layout) --- */
 .products-grid {
   display: grid;
-  grid-template-columns: 1fr; /* عرض منتج واحد لكل سطر مثل الفيديو */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 15px;
 }
 
 .product-card {
-  background: var(--bg-card);
+  background: var(--glass-effect);
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: var(--glass-border);
+  border: var(--border-light);
+  transition: transform 0.2s ease;
 }
 
-.product-image {
-  width: 100%;
-  height: auto;
-  display: block;
+.product-card:active { transform: scale(0.96); }
+.product-image { width: 100%; height: 140px; object-fit: cover; }
+.p-info { padding: 12px; text-align: center; }
+
+/* --- 7. ADMIN SECTION (Organized List View) --- */
+.admin-section h4 { 
+  margin: 1.5rem 0 1rem; 
+  color: var(--primary); 
+  font-size: 1rem; 
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.p-info {
-  padding: 10px;
-  background: rgba(0,0,0,0.4);
+/* Improved User Row for Admin */
+.admin-user-row {
+  background: rgba(255,255,255,0.04);
+  padding: 15px;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between; /* Pushes info to right and buttons to left */
+  align-items: center;
+  border: var(--border-light);
+}
+
+.admin-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-btns button, .admin-btns span {
+  padding: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.admin-btns span:hover { transform: scale(1.2); }
+
+/* --- 8. STATUS & FEEDBACK --- */
+.history-item {
+  background: var(--glass-effect);
+  border-radius: 12px;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin-bottom: 10px;
+  border: var(--border-light);
 }
+
+.plus { color: var(--success); font-weight: bold; }
+.minus { color: var(--danger); font-weight: bold; }
+
+.loading-spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 100px auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- 9. FOOTER --- */
+.footer { 
+  text-align: center; 
+  padding: 2rem 0; 
+  opacity: 0.5; 
+  font-size: 0.8rem; 
+}
+.footer span { color: var(--primary); }
