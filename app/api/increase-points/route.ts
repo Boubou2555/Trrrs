@@ -65,28 +65,31 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const userId = parseInt(searchParams.get('telegramId') || "0");
-    const action = searchParams.get('action');
-
-    // دالة مشاهدة الإعلان
-    if (action === 'watch_ad' && userId > 0) {
-        const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
-        if (checkUser && checkUser.adsCount < MAX_ADS) {
-            await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: 1 }, adsCount: { increment: 1 } } });
-            return new Response('OK', { status: 200 });
-        }
-    }
-
     const adminId = parseInt(searchParams.get('adminId') || "0");
-    
-    // التعديل هنا لربط بيانات المستخدم بالطلبات
+
     if (adminId === ADMIN_ID) {
-        const orders = await prisma.transaction.findMany({ 
+        // جلب الطلبات المعلقة
+        const pendingTransactions = await prisma.transaction.findMany({ 
             where: { status: 'pending' }, 
-            orderBy: { createdAt: 'desc' },
-            include: { user: true } // هذا السطر هو الذي يجلب الاسم واليوزر من جدول المستخدمين
+            orderBy: { createdAt: 'desc' }
         });
-        const users = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
-        return NextResponse.json({ success: true, orders, users });
+
+        // جلب جميع المستخدمين لدمج البيانات يدوياً وتفادي خطأ الـ Type
+        const allUsers = await prisma.user.findMany();
+
+        // دمج بيانات المستخدم مع كل طلب
+        const ordersWithUsers = pendingTransactions.map(order => ({
+            ...order,
+            user: allUsers.find(u => u.telegramId === order.telegramId) || null
+        }));
+
+        const usersList = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
+        
+        return NextResponse.json({ 
+            success: true, 
+            orders: ordersWithUsers, 
+            users: usersList 
+        });
     }
     
     const userData = await prisma.user.findUnique({ where: { telegramId: userId } });
@@ -95,7 +98,7 @@ export async function GET(req: Request) {
     
     return NextResponse.json({ 
         success: true, 
-        points: userData?.points || 0, // إضافة لإرسال النقاط مباشرة
+        points: userData?.points || 0,
         user: userData, 
         history, 
         notifs 
