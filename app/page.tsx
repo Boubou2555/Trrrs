@@ -11,8 +11,9 @@ export default function Home() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('products')
-  const [history, setHistory] = useState([])
-  const [notifs, setNotifs] = useState([])
+  const [history, setHistory] = useState<any[]>([])
+  // تم إصلاح النوع هنا لمنع خطأ Vercel
+  const [notifs, setNotifs] = useState<any[]>([]) 
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [], users: [] })
 
@@ -37,7 +38,7 @@ export default function Home() {
           setLoading(false);
         });
     } else {
-        setLoading(false); // للتجربة خارج تلجرام
+        setLoading(false);
     }
   }, [])
 
@@ -66,7 +67,8 @@ export default function Home() {
     setShowNotif(true);
     if (notifs.some((n: any) => !n.isRead)) {
       adminAction({ action: 'read_notifs', telegramId: user.id });
-      setNotifs((prev: any[]) => prev.map((n: any) => ({ ...n, isRead: true })));
+      // تعديل هنا لضمان توافق الأنواع
+      setNotifs((prev) => prev.map((n: any) => ({ ...n, isRead: true })));
     }
   }
 
@@ -74,6 +76,7 @@ export default function Home() {
 
   return (
     <div className="main-container">
+      {/* الهيدر */}
       <div className="user-header">
         <div className="header-left">
           <img src={user?.photo_url || ''} className="user-avatar" alt="avatar" />
@@ -90,6 +93,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* نافذة الإشعارات */}
       {showNotif && (
         <div className="notif-box">
           <div className="notif-header">
@@ -105,6 +109,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* التبويبات */}
       <div className="tabs-container">
         <button onClick={()=>setActiveTab('products')} className={activeTab==='products'?'tab-button active':'tab-button'}>المنتجات</button>
         <button onClick={()=>setActiveTab('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>الهدية</button>
@@ -144,19 +149,20 @@ export default function Home() {
         {activeTab === 'history' && (
           <div className="history-list">
             {history.map((h: any) => (
-              <div key={h.id} className="history-item" style={{background:'var(--bg-card)', padding:'15px', borderRadius:'12px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+              <div key={h.id} className="history-item">
                 <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                   <span className={`status-text status-${h.status}`}>
                     {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
                   </span>
                   <div><div>{h.description}</div><small style={{color:'var(--text-muted)'}}>{new Date(h.createdAt).toLocaleDateString()}</small></div>
                 </div>
-                <div style={{fontWeight:'bold'}} className={h.amount > 0 ? 'plus' : 'minus'}>{h.amount > 0 ? `+${h.amount}` : h.amount} XP</div>
+                <div className={h.amount > 0 ? 'plus' : 'minus'}>{h.amount > 0 ? `+${h.amount}` : h.amount} XP</div>
               </div>
             ))}
           </div>
         )}
 
+        {/* لوحة الإدارة */}
         {activeTab === 'admin' && (
           <div className="admin-section">
             <h4>📦 الطلبات المعلقة</h4>
@@ -196,7 +202,7 @@ export default function Home() {
           </div>
         )}
       </div>
-      <div style={{textAlign:'center', padding:'20px', color:'var(--text-muted)', fontSize:'0.8rem'}}>Developed By <span>Borhane San</span></div>
+      <div style={{textAlign:'center', padding:'20px', color:'var(--text-muted)', fontSize:'0.7rem'}}>Developed By Borhane</div>
     </div>
   )
 }
