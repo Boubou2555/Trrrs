@@ -48,32 +48,30 @@ export default function Home() {
 
   useEffect(() => {
     refreshData();
-    if (activeTab === 'admin' && user?.id === ADMIN_ID) {
-      fetch(`/api/increase-points?adminId=${ADMIN_ID}`).then(r => r.json()).then(d => setAdminData({ orders: d.orders, users: d.users }))
-    }
+    if (activeTab === 'admin' && user?.id === ADMIN_ID) { loadAdminData(); }
   }, [activeTab, refreshData, user?.id])
 
-  const adminDo = async (p: any) => {
-    const res = await fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({ ...p, adminId: ADMIN_ID }) });
+  const loadAdminData = async () => {
+    const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
     const data = await res.json();
-    fetch(`/api/increase-points?adminId=${ADMIN_ID}`).then(r => r.json()).then(d => setAdminData({ orders: d.orders, users: d.users }))
+    setAdminData({ orders: data.orders || [], users: data.users || [] });
+  }
+
+  const adminAction = async (payload: any) => {
+    const res = await fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) });
+    const data = await res.json();
+    if (data.success) {
+      loadAdminData();
+      if (payload.telegramId === user?.id) { setUser((prev: any) => ({ ...prev, points: data.points })); }
+    }
     return data;
   }
 
-  const handlePointsUpdate = (newPoints: number) => {
-    setUser((prev: any) => ({ ...prev, points: newPoints }));
-    refreshData();
-  };
-
-  if (user?.isBanned) return (
-    <div className="banned-screen"><h2>🚫 محظور</h2><p>السبب: {user.reason}</p></div>
-  )
-
+  if (user?.isBanned) return <div className="banned-screen"><h2>🚫 محظور</h2><p>السبب: {user.reason}</p></div>
   if (loading) return <div className="loading-spinner"></div>
 
   return (
     <div className="main-container">
-      {/* الهيدر */}
       <div className="user-header">
         <div className="header-left">
           <img src={user?.photo_url || ''} className="user-avatar" alt="" />
@@ -90,13 +88,16 @@ export default function Home() {
         </div>
       </div>
 
-      {/* نافذة الإشعارات */}
       {showNotif && (
         <div className="notif-box">
-          <div><b>🔔 الإشعارات</b> <span onClick={() => {setShowNotif(false); adminDo({action:'read_notifs', telegramId:user.id})}}>✖</span></div>
-          {notifs.length === 0 ? <p style={{textAlign:'center', padding:'20px'}}>لا توجد إشعارات</p> : notifs.map((n: any) => (
+          <div className="notif-header">
+            <b>🔔 الإشعارات</b> 
+            <span onClick={() => {setShowNotif(false); adminAction({action:'read_notifs', telegramId:user.id})}}>✖</span>
+          </div>
+          {notifs.map((n: any) => (
             <div key={n.id} className="notif-item">
-              <div><b>{n.title}</b><p>{n.message}</p></div>
+              <img src={user?.photo_url} alt="" className="notif-img" />
+              <div className="notif-details"><b>{n.title}</b><p>{n.message}</p></div>
             </div>
           ))}
         </div>
@@ -118,7 +119,7 @@ export default function Home() {
                 if (user.points < p.price) return tg.showAlert('رصيدك غير كافٍ!');
                 tg.showConfirm(`تأكيد طلب ${p.title}؟`, async (ok:any) => {
                   if(ok) {
-                    const res = await adminDo({action:'purchase_product', telegramId:user.id, price:p.price, productTitle:p.title});
+                    const res = await adminAction({action:'purchase_product', telegramId:user.id, price:p.price, productTitle:p.title});
                     if(res.success) { setUser((prev:any)=>({...prev, points: res.newPoints})); tg.showAlert('تم الطلب!'); refreshData(); }
                   }
                 })
@@ -130,41 +131,47 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === 'tasks' && <Page1 onPointsUpdate={handlePointsUpdate} />}
+        {activeTab === 'tasks' && <Page1 onPointsUpdate={(p) => setUser((prev:any)=>({...prev, points:p}))} />}
+
+        {activeTab === 'history' && (
+           <div className="history-list">
+             {history.map((h: any) => (
+               <div key={h.id} className="history-item">
+                 <div className="history-left">
+                   <div className={`status-dot ${h.status}`}></div>
+                   <div className="history-info">
+                     <p className="history-desc">{h.description}</p>
+                     <span className="history-date">{new Date(h.createdAt).toLocaleDateString('ar-EG')}</span>
+                   </div>
+                 </div>
+                 <div className={`history-amount ${h.amount > 0 ? 'plus' : 'minus'}`}>
+                   {h.amount > 0 ? `+${h.amount}` : h.amount} XP
+                 </div>
+               </div>
+             ))}
+           </div>
+        )}
 
         {activeTab === 'admin' && (
           <div className="admin-section">
-            <h4 style={{marginBottom:'15px'}}>📦 الطلبات ({adminData.orders.length})</h4>
+            <h4>📦 الطلبات</h4>
             {adminData.orders.map((o:any) => (
               <div key={o.id} className="admin-card">
-                <p>ID: {o.telegramId} - {o.description}</p>
+                <p>ID: {o.telegramId} | {o.description}</p>
                 <div className="admin-btns">
-                  <button className="btn-ok" onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'completed'})}>قبول</button>
-                  <button className="btn-no" onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'rejected'})}>رفض</button>
+                  <button className="btn-ok" onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'completed'})}>قبول</button>
+                  <button className="btn-no" onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'rejected'})}>رفض</button>
                 </div>
               </div>
             ))}
-
-            <h4 style={{margin:'20px 0 10px'}}>👥 قائمة الأعضاء</h4>
+            <h4 style={{marginTop:'20px'}}>👥 الأعضاء</h4>
             {adminData.users.map((u:any) => (
-              <div key={u.id} className="admin-user-row" style={{background:'var(--bg-card)', padding:'10px', borderRadius:'10px', marginBottom:'8px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                <div>
-                  <div style={{fontSize:'14px'}}>{u.firstName}</div>
-                  <div style={{fontSize:'12px', color:'var(--primary)'}}>{u.points} XP</div>
-                </div>
+              <div key={u.id} className="admin-user-row">
+                <div className="user-meta"><span>{u.firstName}</span><b>{u.points} XP</b></div>
                 <div className="admin-btns">
-                  <button className="btn-ok" style={{padding:'5px 8px', fontSize:'10px'}} onClick={() => {
-                    const val = prompt('ادخل المبلغ (موجب للزيادة، سالب للخصم):');
-                    if(val) adminDo({action:'manage_points', telegramId:u.telegramId, amount:val});
-                  }}>💰</button>
-                  <button className="btn-no" style={{padding:'5px 8px', fontSize:'10px'}} onClick={() => {
-                    const reason = prompt('سبب الحظر:');
-                    if(reason) adminDo({action:'toggle_ban', telegramId:u.telegramId, status:'ban', reason});
-                  }}>🚫</button>
-                  <button style={{padding:'5px 8px', fontSize:'10px', background:'var(--primary)'}} onClick={() => {
-                    const msg = prompt('نص الإشعار:');
-                    if(msg) adminDo({action:'send_notif', telegramId:u.telegramId, title:'رسالة من الإدارة', message:msg});
-                  }}>🔔</button>
+                  <button className="btn-ok" onClick={() => { const v = prompt('المبلغ:'); if(v) adminAction({action:'manage_points', telegramId:u.telegramId, amount:v}); }}>💰</button>
+                  <button style={{background:'var(--primary)'}} onClick={() => { const t = prompt('العنوان:'); const m = prompt('النص:'); if(t && m) adminAction({action:'send_notif', telegramId:u.telegramId, title:t, message:m}); }}>🔔</button>
+                  <button className="btn-no" onClick={() => { const r = prompt('السبب:'); if(r) adminAction({action:'toggle_ban', telegramId:u.telegramId, status:'ban', reason:r}); }}>🚫</button>
                 </div>
               </div>
             ))}
