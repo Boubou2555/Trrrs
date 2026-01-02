@@ -1,72 +1,55 @@
-
-/* 1. الإعدادات العامة والمتغيرات */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 :root {
-  /* لوحة الألوان الأساسية */
   --primary: #6c5ce7;
-  --primary-glow: rgba(108, 92, 231, 0.4);
   --primary-dark: #5649c0;
   --secondary: #a29bfe;
-  
-  /* ألوان الحالة */
-  --bg-darker: #0f172a; /* لون داكن عصري مائل للأزرق */
+  --darker: #0f172a;
   --bg-card: rgba(30, 41, 59, 0.7);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  
-  --danger: #ef4444;
-  --success: #10b981;
-  --warning: #f59e0b;
-  
-  /* القياسات */
-  --radius-lg: 20px;
-  --radius-md: 12px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+  --light: #f5f6fa;
+  --danger: #ff7675;
+  --success: #00b894;
+  --radius-md: 15px;
+  --glass: rgba(255, 255, 255, 0.05);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  user-select: none;
   font-family: 'Tajawal', sans-serif;
 }
 
 body {
-  background-color: var(--bg-darker);
-  color: var(--text-main);
+  background-color: var(--darker);
+  color: var(--light);
   direction: rtl;
-  line-height: 1.6;
-  min-height: 100vh;
 }
 
-/* 2. الحاوية الرئيسية */
 .main-container {
-  max-width: 600px; /* تحديد عرض مناسب للموبايل والتطبيق */
-  margin: 0 auto;
-  padding: 1.5rem;
-  background: radial-gradient(circle at top left, #1e1b4b 0%, var(--bg-darker) 100%);
+  padding: 1rem;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1e293b 0%, var(--darker) 100%);
 }
 
-/* 3. الهيدر (Header) */
+/* --- الهيدر المطور (إصلاح الجرس والرصيد) --- */
 .user-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem;
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  border: var(--glass-border);
-  backdrop-filter: blur(12px);
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  margin-bottom: 1.5rem;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .user-avatar {
@@ -74,165 +57,131 @@ body {
   height: 55px;
   border-radius: 50%;
   border: 2px solid var(--primary);
-  padding: 2px;
   object-fit: cover;
-  box-shadow: 0 0 15px var(--primary-glow);
 }
 
-.user-name { font-size: 1.1rem; font-weight: 700; color: white; }
-.user-username { font-size: 0.8rem; color: var(--text-muted); }
-
-.header-balance {
-  background: linear-gradient(45deg, var(--primary), var(--secondary));
-  padding: 6px 16px;
-  border-radius: 50px;
-  color: white;
-  font-weight: 700;
-  font-size: 0.9rem;
-  box-shadow: 0 4px 12px var(--primary-glow);
-}
-
-/* 4. نظام الإشعارات */
-.notif-bell {
-  position: relative;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-main);
-  transition: var(--transition);
-}
-
-.notif-bell:hover { transform: rotate(15deg); }
-
-.red-dot {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
-  background: var(--danger);
-  border-radius: 50%;
-  box-shadow: 0 0 10px var(--danger);
-  animation: pulse 2s infinite;
-}
-
-/* 5. التبويبات (Tabs) */
-.tabs-container {
+.header-right {
   display: flex;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 6px;
-  border-radius: var(--radius-md);
-  margin-bottom: 1.5rem;
+  flex-direction: column; /* جعل الرصيد والجرس فوق بعض */
+  align-items: flex-end; /* محاذاة لليمين */
   gap: 8px;
 }
 
+.header-balance {
+  background: var(--primary);
+  padding: 5px 15px;
+  border-radius: 20px;
+  color: white;
+  font-weight: bold;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+}
+
+.notif-bell {
+  font-size: 1.5rem;
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+}
+
+/* --- نافذة الإشعارات (إصلاح تداخل الصورة 2) --- */
+.notif-box {
+  position: fixed; /* تغيير من absolute لضمان عدم التداخل مع الهيدر */
+  top: 10%;
+  left: 5%;
+  right: 5%;
+  bottom: 10%;
+  background: #1e293b;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  z-index: 9999;
+  overflow-y: auto;
+  border: 1px solid var(--primary);
+}
+
+/* --- قسم الإدارة (إصلاح الصورة 1) --- */
+.admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 15px 0;
+  font-weight: bold;
+}
+
+.admin-user-row {
+  background: var(--glass);
+  padding: 15px;
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between; /* فصل الاسم عن الأزرار */
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.user-main-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-username { font-size: 0.9rem; font-weight: bold; }
+.admin-balance-text { font-size: 0.75rem; color: var(--secondary); }
+
+.admin-btns {
+  display: flex;
+  gap: 12px; /* مسافة بين أيقونات الإدارة */
+}
+
+.admin-btns span, .admin-btns i {
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.admin-btns span:active { transform: scale(1.3); }
+
+/* --- التبويبات --- */
+.tabs-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(0,0,0,0.2);
+  padding: 5px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
 .tab-button {
-  flex: 1;
-  padding: 10px;
+  padding: 10px 5px;
   border: none;
   background: transparent;
-  color: var(--text-muted);
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: var(--transition);
+  color: white;
+  font-size: 0.8rem;
+  border-radius: 10px;
 }
 
 .tab-button.active {
   background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* 6. شبكة المنتجات (Products) */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 16px;
-}
-
-.product-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: var(--glass-border);
-  transition: var(--transition);
-  cursor: pointer;
-}
-
-.product-card:hover {
-  transform: translateY(-5px);
-  border-color: var(--primary);
-  box-shadow: 0 12px 20px -10px rgba(0,0,0,0.5);
-}
-
-.product-image {
-  width: 100%;
-  height: 130px;
-  object-fit: cover;
-  filter: brightness(0.9);
-}
-
-.p-info { padding: 12px; text-align: center; }
-.p-info h3 { font-size: 0.9rem; margin-bottom: 6px; color: var(--text-main); }
-.p-info span { color: var(--secondary); font-weight: 800; font-size: 1rem; }
-
-/* 7. سجل العمليات (History) */
-.history-item {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  padding: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  border-right: 4px solid transparent;
-}
-
-.history-item:has(.plus) { border-right-color: var(--success); }
-.history-item:has(.minus) { border-right-color: var(--danger); }
-
-/* 8. الأزرار العامة */
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.btn:active { transform: scale(0.95); }
-.btn-ok { background: var(--success); color: white; }
-.btn-no { background: var(--danger); color: white; }
-.btn-blue { background: var(--primary); color: white; }
-
-/* 9. تأثيرات التحميل (Loading) */
-.loading-spinner {
-  width: 45px;
-  height: 45px;
-  border: 4px solid rgba(108, 92, 231, 0.1);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.8s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
-  margin: 50px auto;
-}
-
-/* 10. التذييل (Footer) */
-.footer {
-  text-align: center;
-  padding: 30px 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  letter-spacing: 0.5px;
-}
-
-.footer span { color: var(--primary); }
-
-/* Keyframes */
+/* --- الرسوم المتحركة --- */
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
 }
-
-@keyframes spin { to { transform: rotate(360deg); } }
+.red-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--danger);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
