@@ -19,6 +19,7 @@ export default function Home() {
 
   const isFetching = useRef(false);
 
+  // تحديث البيانات في الخلفية
   const refreshData = useCallback(async (isInitial = false) => {
     if (!user?.id || user.isBanned || isFetching.current) return;
     if (isInitial) setTabLoading(true);
@@ -36,6 +37,7 @@ export default function Home() {
     }
   }, [user?.id, user?.isBanned]);
 
+  // التحديث التلقائي للنقطة الحمراء
   useEffect(() => {
     if (user?.id && !user.isBanned) {
       const interval = setInterval(refreshData, 4000);
@@ -43,6 +45,7 @@ export default function Home() {
     }
   }, [user?.id, user?.isBanned, refreshData]);
 
+  // دخول المستخدم
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user) {
@@ -55,6 +58,7 @@ export default function Home() {
     } else { setLoading(false); }
   }, [])
 
+  // جلب بيانات الإدارة
   useEffect(() => {
     if (activeTab === 'history') refreshData(true);
     if (activeTab === 'admin' && user?.id === ADMIN_ID) loadAdminData();
@@ -65,7 +69,7 @@ export default function Home() {
     try {
       const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
       const data = await res.json();
-      // تأكد أن الـ API يعيد حقل user داخل كل order
+      // هنا نتوقع أن يرسل السيرفر orders تحتوي على كائن user مدمج
       setAdminData({ orders: data.orders || [], users: data.users || [] });
     } catch (e) { console.error(e) } finally { setTabLoading(false); }
   }
@@ -195,8 +199,8 @@ export default function Home() {
                   <div key={o.id} className="admin-card">
                     <div style={{fontSize:'0.85rem', marginBottom:'10px'}}>
                       <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #ffffff10', paddingBottom:'5px', marginBottom:'5px'}}>
-                        {/* جلب الاسم واليوزر من بيانات المستخدم المرتبطة بالطلب في قاعدة البيانات */}
-                        <span>👤 <b>{o.user?.firstName || 'جاري التحميل...'}</b></span>
+                        {/* هنا يتم العرض من قاعدة البيانات مباشرة */}
+                        <span>👤 <b>{o.user?.firstName || 'بدون اسم'}</b></span>
                         <span style={{color:'#ffa500', fontWeight:'bold'}}>@{o.user?.username || 'no_user'}</span>
                       </div>
                       <div style={{opacity:0.6, fontSize:'0.75rem'}}>🆔 ID: {o.telegramId}</div>
@@ -214,7 +218,6 @@ export default function Home() {
                 <div className="admin-card">
                   {adminData.users.map((u:any) => (
                     <div key={u.id} className="user-row">
-                      {/* جلب الاسم واليوزر مباشرة من حقول جدول المستخدمين في MongoDB */}
                       <div><b>{u.firstName}</b><br/><small style={{color:'#ffa500'}}>@{u.username || 'unknown'}</small></div>
                       <div className="admin-btns">
                         <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
