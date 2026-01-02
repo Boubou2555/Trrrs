@@ -16,23 +16,22 @@ export default function Home() {
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [], users: [] })
 
-  // دالة تحديث البيانات لضمان تحديث النقاط فوراً
+  // دالة التحديث الشاملة (نقاط، سجل، إشعارات)
   const refreshData = useCallback(async () => {
     if (!user?.id) return;
     try {
       const res = await fetch(`/api/increase-points?telegramId=${user.id}`);
       const d = await res.json();
       
-      // إذا كان المستخدم محظوراً، نقوم بإعادة توجيهه أو تنبيهه
+      // التحقق من الحظر فورا
       if (d.user?.status === 1) {
-          alert(`أنت محظور! السبب: ${d.user.banReason || 'غير محدد'}`);
-          return;
+        setUser((prev: any) => ({ ...prev, isBanned: true, banReason: d.user.banReason }));
+      } else {
+        setHistory(d.history || []);
+        setNotifs(d.notifs || []);
+        setUser((prev: any) => prev ? { ...prev, points: d.points ?? prev.points, isBanned: false } : null);
       }
-
-      setHistory(d.history || []);
-      setNotifs(d.notifs || []);
-      setUser((prev: any) => prev ? { ...prev, points: d.points ?? prev.points } : null);
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error("Error refreshing data:", e) }
   }, [user?.id])
 
   useEffect(() => {
@@ -44,37 +43,42 @@ export default function Home() {
         body: JSON.stringify({...u, action: 'login_check'}) 
       })
       .then(r => r.json()).then(data => {
-        if (data.user?.status === 1) {
-            alert("هذا الحساب محظور.");
-        }
-        setUser({ ...u, points: data.points || 0 });
+        setUser({ ...u, points: data.points || 0, isBanned: data.user?.status === 1 });
         setLoading(false);
       });
     } else { setLoading(false); }
   }, [])
 
   useEffect(() => {
-    refreshData();
-    if (activeTab === 'admin' && user?.id === ADMIN_ID) loadAdminData();
+    if (user?.id) {
+      refreshData();
+      if (activeTab === 'admin' && user?.id === ADMIN_ID) loadAdminData();
+    }
   }, [activeTab, refreshData, user?.id])
 
   const loadAdminData = async () => {
-    const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
-    const data = await res.json();
-    setAdminData({ orders: data.orders || [], users: data.users || [] });
+    try {
+      const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
+      const data = await res.json();
+      setAdminData({ orders: data.orders || [], users: data.users || [] });
+    } catch (e) { console.error(e) }
   }
 
   const adminAction = async (payload: any) => {
-    const res = await fetch('/api/increase-points', { 
-        method: 'POST', 
-        body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) 
-    });
-    const data = await res.json();
-    if (data.success) {
-      await loadAdminData();
-      await refreshData(); // تحديث فوري للنقاط والحالة بعد أي إجراء
-    }
-    return data;
+    try {
+      const res = await fetch('/api/increase-points', { 
+          method: 'POST', 
+          body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) 
+      });
+      const data = await res.json();
+      if (data.success) {
+        // تحديث البيانات فورا بعد أي عملية للأدمن
+        await loadAdminData();
+        await refreshData();
+        return true;
+      }
+    } catch (e) { console.error(e) }
+    return false;
   }
 
   const handleOpenNotifs = () => {
@@ -86,9 +90,16 @@ export default function Home() {
   }
 
   if (loading) return <div className="loading-spinner"></div>
+  if (user?.isBanned) return (
+    <div className="main-container" style={{textAlign:'center', paddingTop:'100px'}}>
+      <h1 style={{color:'var(--danger)'}}>🚫 حسابك محظور</h1>
+      <p>{user.banReason || "لقد تم حظرك لمخالفة القوانين"}</p>
+    </div>
+  )
 
   return (
     <div className="main-container">
+      {/* الهيدر مع الجرس أسفل الرصيد */}
       <div className="user-header">
         <div className="header-left">
           <img src={user?.photo_url || ''} className="user-avatar" alt="avatar" />
@@ -97,8 +108,6 @@ export default function Home() {
             <div style={{fontSize:'0.7rem', color:'var(--text-muted)'}}>@{user?.username || 'user'}</div>
           </div>
         </div>
-        
-        {/* الجرس تحت الرصيد */}
         <div className="header-right">
           <div className="header-balance">{user?.points || 0} XP</div>
           <div className="notif-bell-wrapper" onClick={handleOpenNotifs}>
@@ -107,6 +116,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* نافذة الإشعارات */}
       {showNotif && (
         <div className="notif-box">
           <div className="notif-header">
@@ -122,6 +132,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* التبويبات */}
       <div className="tabs-container">
         <button onClick={()=>setActiveTab('products')} className={activeTab==='products'?'tab-button active':'tab-button'}>المنتجات</button>
         <button onClick={()=>setActiveTab('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>الهدية</button>
@@ -146,7 +157,7 @@ export default function Home() {
                   }
                 })
               }}>
-                <img src={p.img} className="product-image" alt="p" />
+                <img src={p.img} className="product-image" alt="product" />
                 <div style={{padding:'10px', textAlign:'center'}}>
                    <div style={{fontSize:'0.85rem', fontWeight:700}}>{p.title}</div>
                    <div style={{color:'var(--primary-light)', fontSize:'0.8rem'}}>{p.price} XP</div>
@@ -161,9 +172,14 @@ export default function Home() {
         {activeTab === 'history' && (
           <div className="history-list">
             {history.map((h: any) => (
-              <div key={h.id} style={{background:'var(--bg-card)', padding:'10px', borderRadius:'10px', marginBottom:'10px', display:'flex', justifyContent:'space-between'}}>
-                <div>{h.description}</div>
-                <div style={{color: h.amount > 0 ? 'var(--success)' : 'var(--danger)'}}>{h.amount} XP</div>
+              <div key={h.id} className="history-item">
+                <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                  <span className={`status-text status-${h.status}`}>
+                    {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
+                  </span>
+                  <div><div>{h.description}</div><small style={{color:'var(--text-muted)'}}>{new Date(h.createdAt).toLocaleTimeString()}</small></div>
+                </div>
+                <div style={{fontWeight:'bold'}} className={h.amount > 0 ? 'plus' : 'minus'}>{h.amount > 0 ? `+${h.amount}` : h.amount} XP</div>
               </div>
             ))}
           </div>
@@ -171,40 +187,54 @@ export default function Home() {
 
         {activeTab === 'admin' && (
           <div className="admin-section">
-            <h4>👥 قائمة الأعضاء</h4>
-            {adminData.users.map((u:any) => (
-              <div key={u.id} className="user-row">
-                <div>
-                    <b>{u.firstName}</b> 
-                    <span style={{fontSize:'0.7rem', color: u.status === 1 ? 'red' : 'green', marginRight:'5px'}}>
-                        ({u.status === 1 ? 'محظور' : 'نشط'})
-                    </span>
-                    <br/> <small>{u.points} XP</small>
+            <h4 style={{margin:'10px 0'}}>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
+            {adminData.orders.length === 0 ? <p style={{color:'var(--text-muted)'}}>لا توجد طلبات</p> : adminData.orders.map((o:any) => (
+              <div key={o.id} className="admin-card">
+                <div style={{fontSize:'0.85rem', marginBottom:'8px'}}>
+                  👤 <b>{o.user?.firstName || o.telegramId}</b> <br/>
+                  🛍️ {o.description}
                 </div>
                 <div className="admin-btns">
-                    <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {
-                        const val = prompt(`تعديل رصيد ${u.firstName}:`);
-                        if(val) adminAction({action:'manage_points', telegramId: u.telegramId, amount: val});
-                    }}>💰</button>
-                    
-                    <button className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
-                        const confirmBan = confirm(u.status === 1 ? "إلغاء الحظر؟" : "هل تريد حظر هذا المستخدم؟");
-                        if(confirmBan) {
-                            const reason = u.status === 1 ? "" : prompt("سبب الحظر؟") || "مخالفة القوانين";
-                            adminAction({
-                                action: 'toggle_ban', 
-                                telegramId: u.telegramId, 
-                                status: u.status === 1 ? 'unban' : 'ban', 
-                                reason 
-                            });
-                        }
-                    }}>{u.status === 1 ? '🔓' : '🚫'}</button>
+                  <button className="btn-mini" style={{background:'var(--success)', flex:1}} onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'completed', telegramId: o.telegramId})}>قبول</button>
+                  <button className="btn-mini" style={{background:'var(--danger)', flex:1}} onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'rejected', telegramId: o.telegramId})}>رفض</button>
                 </div>
               </div>
             ))}
+
+            <h4 style={{margin:'20px 0 10px 0'}}>👥 قائمة الأعضاء</h4>
+            <div className="admin-card">
+              {adminData.users.map((u:any) => (
+                <div key={u.id} className="user-row">
+                  <div>
+                    <b>{u.firstName}</b> 
+                    <span style={{fontSize:'0.7rem', color: u.status === 1 ? 'red' : 'green', marginRight:'5px'}}>
+                      ({u.status === 1 ? 'محظور' : 'نشط'})
+                    </span>
+                    <br/> <small>{u.points} XP</small>
+                  </div>
+                  <div className="admin-btns">
+                    <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {
+                      const val = prompt(`إضافة/خصم نقاط لـ ${u.firstName}:`);
+                      if(val) adminAction({action:'manage_points', telegramId: u.telegramId, amount: val});
+                    }}>💰</button>
+                    <button className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {
+                      const title = prompt("عنوان الإشعار:");
+                      const msg = prompt("نص الرسالة:");
+                      if(title && msg) adminAction({action:'send_notif', telegramId: u.telegramId, title, message: msg});
+                    }}>🔔</button>
+                    <button className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
+                      if(confirm(u.status === 1 ? "فك الحظر؟" : "حظر المستخدم؟")) {
+                        adminAction({action:'toggle_ban', telegramId: u.telegramId, status: u.status === 1 ? 'unban' : 'ban', reason: 'مخالفة'});
+                      }
+                    }}>{u.status === 1 ? '🔓' : '🚫'}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
+      <div style={{textAlign:'center', padding:'20px', color:'var(--text-muted)', fontSize:'0.7rem'}}>Developed By Borhane</div>
     </div>
   )
 }
