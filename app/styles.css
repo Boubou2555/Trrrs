@@ -1,34 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 /* ==========================================
-   المتغيرات العامة (كما هي في كودك)
+   المتغيرات العامة (نفس ألوان تصميمك)
    ========================================== */
 :root {
   --primary: #7c3aed;
   --primary-dark: #6d28d9;
   --primary-light: #a78bfa;
   --secondary: #06b6d4;
-  --secondary-dark: #0891b2;
   --bg-darker: #0f172a;
   --bg-dark: #1e293b;
   --bg-card: rgba(255, 255, 255, 0.06);
-  --bg-card-hover: rgba(255, 255, 255, 0.1);
   --text-light: #f1f5f9;
   --text-muted: rgba(241, 245, 249, 0.6);
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
-  --border-light: rgba(255, 255, 255, 0.1);
-  --border-lighter: rgba(255, 255, 255, 0.05);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
-  --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 15px;
   --radius-xl: 20px;
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
+  --transition: 0.3s ease;
 }
 
 /* ==========================================
@@ -46,7 +37,6 @@ body {
   background-color: var(--bg-darker);
   color: var(--text-light);
   direction: rtl;
-  overflow-x: hidden;
   line-height: 1.6;
 }
 
@@ -58,7 +48,7 @@ body {
 }
 
 /* ==========================================
-   هيدر المستخدم (Header)
+   الهيدر (Header)
    ========================================== */
 .user-header {
   display: flex;
@@ -70,124 +60,183 @@ body {
   border-radius: var(--radius-lg);
   border: 1px solid rgba(124, 58, 237, 0.3);
   backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-sm);
 }
 
-.header-left { display: flex; align-items: center; gap: 12px; }
-.user-avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
-.user-info { display: flex; flex-direction: column; }
-.user-name { font-size: 1rem; font-weight: 700; }
-.user-username { font-size: 0.75rem; color: var(--text-muted); }
+.user-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  object-fit: cover;
+}
 
-.header-right { display: flex; align-items: center; gap: 15px; }
 .header-balance {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(6, 182, 212, 0.25));
-  padding: 6px 14px; border-radius: var(--radius-xl); color: #a78bfa; font-weight: 700;
+  background: rgba(124, 58, 237, 0.25);
+  padding: 6px 14px;
+  border-radius: var(--radius-xl);
+  color: #a78bfa;
+  font-weight: 700;
   border: 1px solid rgba(124, 58, 237, 0.4);
 }
 
 /* ==========================================
-   نظام الإشعارات (كما في كودك)
+   نظام الإشعارات (مع صورة المنتج)
    ========================================== */
-.notif-bell { position: relative; font-size: 1.4rem; cursor: pointer; padding: 8px; border-radius: 50%; transition: var(--transition-fast); }
-.red-dot { position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; background: var(--danger); border-radius: 50%; border: 2px solid var(--bg-darker); animation: pulse 1.5s infinite; }
-
-@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.6; } }
-
 .notif-box {
-  position: fixed; top: 190px; left: 1rem; right: 1rem; background: #0f172a; border-radius: 20px;
-  border: 2px solid var(--primary); box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9); z-index: 999999;
-  max-height: calc(100vh - 200px); overflow-y: auto; animation: popCenter 0.3s ease;
+  position: fixed;
+  top: 190px;
+  left: 1rem;
+  right: 1rem;
+  background: #0f172a;
+  border-radius: 20px;
+  border: 2px solid var(--primary);
+  z-index: 9999;
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9);
 }
 
-@keyframes popCenter { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-
-.notif-box > div:first-child {
-  padding: 1.2rem 1rem; background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center;
-  position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px);
+.notif-header {
+  padding: 1.2rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.notif-item { display: flex; align-items: center; gap: 12px; padding: 14px 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-.notif-item img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
-.notif-item b { font-size: 0.95rem; color: var(--text-light); display: block; margin-bottom: 4px; }
-.notif-item p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+.notif-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.notif-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--primary);
+  background: var(--bg-dark);
+}
+
+.notif-details b { font-size: 0.95rem; color: var(--text-light); }
+.notif-details p { font-size: 0.85rem; color: var(--text-muted); }
 
 /* ==========================================
    التبويبات (Tabs)
    ========================================== */
 .tabs-container {
-  display: grid; grid-template-columns: repeat(4, 1fr); background: var(--bg-card);
-  padding: 6px; border-radius: var(--radius-md); margin-bottom: 1.5rem; gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--bg-card);
+  padding: 6px;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  gap: 5px;
 }
 
 .tab-button {
-  padding: 12px 8px; border: none; background: transparent; color: var(--text-light);
-  font-weight: 600; font-size: 0.85rem; border-radius: var(--radius-sm); transition: var(--transition-fast);
+  padding: 12px 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
 }
 
 .tab-button.active {
-  background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); transform: translateY(-2px);
+  background: var(--primary);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
 }
 
 /* ==========================================
-   سجل العمليات (History)
+   سجل العمليات (History) - مع أيقونات الحالة
    ========================================== */
 .history-list { display: flex; flex-direction: column; gap: 10px; }
+
 .history-item {
-  background: var(--bg-card); border-radius: var(--radius-md); padding: 14px;
-  display: flex; justify-content: space-between; align-items: center;
-  border: 1px solid var(--border-lighter); transition: var(--transition-fast);
+  background: var(--bg-card);
+  padding: 15px;
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .history-left { display: flex; align-items: center; gap: 12px; }
-.history-desc { font-size: 0.9rem; color: var(--text-light); font-weight: 500; }
+
+.status-icon {
+  font-size: 1.4rem;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.03);
+  border-radius: 50%;
+}
+
+.history-desc { font-size: 0.9rem; font-weight: 600; }
 .history-date { font-size: 0.75rem; color: var(--text-muted); }
-.history-amount { font-weight: 700; font-size: 1.1rem; }
-.history-amount.plus { color: var(--success); }
-.history-amount.minus { color: var(--danger); }
+
+.history-amount.plus { color: var(--success); font-weight: bold; }
+.history-amount.minus { color: var(--danger); font-weight: bold; }
 
 /* ==========================================
    المنتجات
    ========================================== */
 .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
 .product-card {
-  background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden;
-  border: 1px solid var(--border-light); transition: var(--transition-normal);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .product-image { width: 100%; height: 130px; object-fit: cover; }
 .p-info { padding: 12px; text-align: center; background: rgba(0, 0, 0, 0.2); }
-.p-info h3 { font-size: 0.9rem; color: var(--text-light); }
-.p-info span { color: var(--secondary); font-weight: 700; }
 
 /* ==========================================
-   لوحة الإدارة (إصلاح الأزرار)
+   لوحة الإدارة (Admin Panel)
    ========================================== */
-.admin-user-row {
-  background: var(--bg-card); padding: 14px; border-radius: var(--radius-md); margin-bottom: 10px;
-  display: flex; justify-content: space-between; align-items: center;
-  border: 1px solid var(--border-lighter);
+.admin-card, .admin-user-row {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.admin-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-btns { display: flex; gap: 8px; }
+
 .admin-btns button {
-  padding: 8px 12px; border: none; border-radius: var(--radius-sm); color: white;
-  cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: var(--transition-fast);
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 .btn-ok { background: var(--success); }
 .btn-no { background: var(--danger); }
 .btn-blue { background: var(--primary); }
 
-/* ==========================================
-   الفوتر والتحميل
-   ========================================== */
+/* الفوتر والتحميل */
 .loading-spinner {
-  width: 50px; height: 50px; border: 4px solid var(--border-light);
+  width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.1);
   border-top: 4px solid var(--primary); border-radius: 50%;
   animation: spin 0.8s linear infinite; margin: 100px auto;
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.footer { text-align: center; padding: 1.5rem 0; color: var(--text-muted); font-size: 0.75rem; margin-top: 2rem; }
-.footer span { color: var(--primary); font-weight: 700; }
+.footer { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.8rem; }
+.footer span { color: var(--primary); font-weight: bold; }
