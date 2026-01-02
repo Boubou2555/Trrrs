@@ -1,7 +1,8 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 /* ==========================================
-   المتغيرات الأساسية
+   المتغيرات والأساسيات
    ========================================== */
 :root {
   --primary: #7c3aed;
@@ -15,14 +16,12 @@
   --text-muted: rgba(241, 245, 249, 0.6);
   --success: #10b981;
   --danger: #ef4444;
+  --warning: #f59e0b;
   --radius-md: 12px;
   --radius-lg: 15px;
   --transition: 0.3s ease;
 }
 
-/* ==========================================
-   إعدادات عامة
-   ========================================== */
 * {
   margin: 0;
   padding: 0;
@@ -76,7 +75,7 @@ body {
 }
 
 /* ==========================================
-   نظام الإشعارات (Notifications)
+   نافذة الإشعارات (مع الصورة)
    ========================================== */
 .notif-bell { position: relative; font-size: 1.4rem; cursor: pointer; }
 .red-dot {
@@ -87,7 +86,7 @@ body {
 .notif-box {
   position: fixed;
   top: 80px; left: 1rem; right: 1rem;
-  background: var(--bg-dark);
+  background: #1e293b;
   border-radius: var(--radius-lg);
   border: 2px solid var(--primary);
   z-index: 1000;
@@ -96,21 +95,29 @@ body {
   box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 }
 
-.notif-box > div:first-child {
+.notif-header {
   padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
   display: flex; justify-content: space-between; align-items: center;
 }
 
 .notif-item {
+  display: flex; align-items: center; gap: 12px;
   padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
 }
+
+.notif-img {
+  width: 45px; height: 45px; border-radius: 50%; border: 1px solid var(--primary);
+}
+
+.notif-details b { font-size: 0.95rem; display: block; margin-bottom: 3px; }
+.notif-details p { font-size: 0.85rem; color: var(--text-muted); }
 
 /* ==========================================
    التبويبات (Tabs)
    ========================================== */
 .tabs-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   background: var(--bg-card);
   padding: 5px;
   border-radius: var(--radius-md);
@@ -119,10 +126,9 @@ body {
 }
 
 .tab-button {
-  padding: 12px 5px; border: none; background: transparent;
-  color: white; font-weight: 600; font-size: 0.85rem;
+  padding: 12px 2px; border: none; background: transparent;
+  color: white; font-weight: 600; font-size: 0.8rem;
   border-radius: var(--radius-md); cursor: pointer;
-  transition: var(--transition);
 }
 
 .tab-button.active {
@@ -131,85 +137,73 @@ body {
 }
 
 /* ==========================================
+   السجل (History) - التصميم الاحترافي
+   ========================================== */
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+
+.history-item {
+  background: var(--bg-card);
+  padding: 15px;
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.history-left { display: flex; align-items: center; gap: 12px; }
+
+.status-dot { width: 10px; height: 10px; border-radius: 50%; }
+.status-dot.completed { background: var(--success); box-shadow: 0 0 8px var(--success); }
+.status-dot.pending { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+.status-dot.rejected { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+.history-info .history-desc { font-size: 0.9rem; font-weight: 500; margin-bottom: 2px; }
+.history-info .history-date { font-size: 0.7rem; color: var(--text-muted); }
+
+.history-amount { font-weight: bold; font-size: 1rem; }
+.history-amount.plus { color: var(--success); }
+.history-amount.minus { color: var(--danger); }
+
+/* ==========================================
    المنتجات (Products)
    ========================================== */
-.products-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-}
-
-.product-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.05);
-  transition: var(--transition);
-}
-
+.products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.product-card { background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
 .product-image { width: 100%; height: 120px; object-fit: cover; }
 .p-info { padding: 10px; text-align: center; }
 .p-info h3 { font-size: 0.85rem; margin-bottom: 5px; }
 .p-info span { color: var(--secondary); font-weight: bold; }
 
 /* ==========================================
-   لوحة الإدارة (Admin Panel) - الجزء المصلح
+   لوحة الإدارة (Admin Panel)
    ========================================== */
-.admin-section h4 {
-  margin: 15px 0 10px; color: var(--primary-light); font-size: 0.9rem;
-}
-
-.admin-card {
-  background: var(--bg-card);
-  padding: 12px;
-  border-radius: var(--radius-md);
-  margin-bottom: 10px;
-  border: 1px solid rgba(255,255,255,0.05);
-}
-
-/* تنسيق أسطر الأعضاء مع الأزرار الجانبية */
 .admin-user-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
   background: rgba(255,255,255,0.03);
-  padding: 10px;
-  border-radius: 10px;
-  margin-bottom: 8px;
+  padding: 12px; border-radius: 10px; margin-bottom: 10px;
   border: 1px solid rgba(255,255,255,0.05);
 }
 
-.admin-btns {
-  display: flex;
-  gap: 5px;
-}
+.user-meta span { display: block; font-size: 0.9rem; font-weight: bold; }
+.user-meta b { font-size: 0.8rem; color: var(--primary-light); }
 
+.admin-btns { display: flex; gap: 6px; }
 .admin-btns button {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 12px;
+  width: 35px; height: 35px; border: none; border-radius: 8px;
+  color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 
 .btn-ok { background: var(--success); }
 .btn-no { background: var(--danger); }
 
-/* ==========================================
-   شاشة الحظر والتحميل
-   ========================================== */
-.banned-screen {
-  text-align: center; padding: 100px 20px;
-}
-
+/* الشاشات والتحميل */
 .loading-spinner {
   width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
   border-top: 3px solid var(--primary); border-radius: 50%;
   animation: spin 1s linear infinite; margin: 100px auto;
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* الفوتر */
 .footer { text-align: center; margin-top: 30px; font-size: 0.75rem; color: var(--text-muted); }
 .footer span { color: var(--primary); font-weight: bold; }
