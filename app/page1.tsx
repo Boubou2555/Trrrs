@@ -17,18 +17,22 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   const [notification, setNotification] = useState('')
   const MAX_ADS = 10 
 
-  // الـ Block ID الخاص بك لـ AdsGram
-  const ADSGRAM_BLOCK_ID = "int-20305";
+  // المعرف الجديد الذي أرسلته
+  const ADSGRAM_BLOCK_ID = "int-20419";
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
       const userData = tg.initDataUnsafe.user
       setUser(userData)
+      
+      // جلب العداد الحالي من قاعدة البيانات
       fetch(`/api/increase-points?telegramId=${userData.id}`)
         .then(res => res.json())
         .then(data => { 
-          if (data.success) setAdsCount(data.user?.adsCount || 0) 
+          if (data.success && data.user) {
+            setAdsCount(data.user.adsCount || 0) 
+          }
         })
     }
   }, [])
@@ -37,30 +41,26 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     if (!user || adsCount >= MAX_ADS || isLoading) return;
     setIsLoading(true);
 
+    // أول 5 إعلانات من Adsgram
     if (adsCount < 5) {
-      // --- تنفيذ AdsGram حسب التوثيق المرفق ---
       const adsgram = (window as any).Adsgram;
-      
       if (adsgram) {
         setNotification('📺 جاري عرض إعلان AdsGram...');
         const AdController = adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
         
         AdController.show()
-          .then((result: any) => {
-            // حسب الصورة: الرد يحتوي على done: true عند اكتمال المشاهدة
-            processReward();
-          })
+          .then(() => processReward())
           .catch((err: any) => {
-            console.error(err);
             setIsLoading(false);
-            setNotification('😔 الإعلان غير متوفر حالياً');
+            setNotification(err?.error === 'not_filled' ? '😔 لا يوجد إعلانات حالياً' : '❌ فشل العرض');
           });
       } else {
-        setNotification('⚠️ جاري تحميل مكتبة الإعلانات...');
+        setNotification('⚠️ جاري تحميل النظام...');
         setIsLoading(false);
       }
-    } else {
-      // --- تنفيذ Monetag ---
+    } 
+    // الـ 5 المتبقية من Monetag
+    else {
       if (typeof (window as any).show_10400479 === 'function') {
         setNotification('📺 جاري عرض إعلان Monetag...');
         (window as any).show_10400479()
@@ -69,12 +69,15 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
             setIsLoading(false);
             setNotification('❌ فشل تشغيل Monetag');
           });
+      } else {
+        setNotification('⚠️ Monetag غير جاهز');
+        setIsLoading(false);
       }
     }
   };
 
   const processReward = async () => {
-    setNotification('⏳ جاري تسجيل جائزتك...');
+    setNotification('⏳ جاري تسجيل الجائزة في MongoDB...');
     try {
       const res = await fetch('/api/increase-points', {
         method: 'POST',
@@ -83,12 +86,12 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
       });
       const data = await res.json();
       if (data.success) {
-        setAdsCount(data.newAdsCount);
+        setAdsCount(data.newAdsCount); // تحديث عداد adsCount في الصورة
         onPointsUpdate(data.newPoints);
-        setNotification('🎉 حصلت على 1 XP!');
+        setNotification('🎉 حصلت على 1 XP بنجاح!');
       }
     } catch (e) {
-      setNotification('❌ خطأ في السيرفر');
+      setNotification('❌ خطأ في تحديث البيانات');
     } finally {
       setIsLoading(false);
     }
@@ -98,21 +101,29 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
 
   return (
     <div style={{ padding: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px', textAlign: 'center' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <span>مهام اليوم ({adsCount < 5 ? 'AdsGram' : 'Monetag'})</span>
-        <span>{Math.round(progress)}%</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
+        <span>المهام اليومية ({adsCount < 5 ? 'AdsGram' : 'Monetag'})</span>
+        <span style={{ color: '#a29bfe' }}>{Math.round(progress)}%</span>
       </div>
-      <div style={{ width: '100%', height: '10px', background: '#333', borderRadius: '5px', overflow: 'hidden', marginBottom: '10px' }}>
-        <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary)', transition: '0.3s' }}></div>
+      
+      {/* شريط التقدم الذي يتبع adsCount من MongoDB */}
+      <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', marginBottom: '15px', overflow: 'hidden' }}>
+        <div style={{ width: `${progress}%`, height: '100%', background: adsCount >= MAX_ADS ? '#00b894' : 'var(--primary)', transition: 'width 0.5s ease' }}></div>
       </div>
+      
+      <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '20px' }}>
+        {adsCount >= MAX_ADS ? '✅ اكتملت جميع مهام اليوم' : `مكتمل ${adsCount} من ${MAX_ADS}`}
+      </p>
+
       <button 
         onClick={handleWatchAd} 
         disabled={adsCount >= MAX_ADS || isLoading}
-        style={{ width: '100%', padding: '15px', borderRadius: '10px', background: adsCount >= MAX_ADS ? '#555' : 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer' }}
+        style={{ width: '100%', padding: '15px', borderRadius: '12px', background: adsCount >= MAX_ADS ? '#333' : 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
       >
-        {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد واربح'}
+        {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت المهمة' : '📺 شاهد الإعلان واربح'}
       </button>
-      {notification && <p style={{ marginTop: '10px', fontSize: '0.8rem' }}>{notification}</p>}
+
+      {notification && <p style={{ marginTop: '15px', fontSize: '0.8rem', color: '#a29bfe' }}>{notification}</p>}
     </div>
   )
 }
