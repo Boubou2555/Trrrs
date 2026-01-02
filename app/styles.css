@@ -1,312 +1,238 @@
 
-/* =========================================================
-     Telegram Mini App Premium UI – Full Professional
-     Optimized for Borhane App ❤️
-========================================================= */
+/* 1. الإعدادات العامة والمتغيرات */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
-/* Telegram Theme Fallbacks */
 :root {
-  --bg: #ffffff;
-  --bg2: #f4f5f7;
-  --text: #111;
-  --text-light: #666;
-  --primary: #5b86ff;
-  --primary-soft: #e8ecff;
-  --danger: #ff4d4d;
-  --success: #34c759;
-  --card: #ffffff;
-  --border: rgba(0,0,0,0.10);
-  --shadow: 0 4px 12px rgba(0,0,0,0.06);
+  /* لوحة الألوان الأساسية */
+  --primary: #6c5ce7;
+  --primary-glow: rgba(108, 92, 231, 0.4);
+  --primary-dark: #5649c0;
+  --secondary: #a29bfe;
+  
+  /* ألوان الحالة */
+  --bg-darker: #0f172a; /* لون داكن عصري مائل للأزرق */
+  --bg-card: rgba(30, 41, 59, 0.7);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  
+  /* القياسات */
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Auto Telegram Theming */
-body {
-  font-family: "Tajawal", sans-serif;
-  background: var(--tg-theme-bg-color, var(--bg));
-  color: var(--tg-theme-text-color, var(--text));
-  padding: 0;
+* {
   margin: 0;
-  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Tajawal', sans-serif;
 }
 
-/* =========================================================
-     HEADER
-========================================================= */
+body {
+  background-color: var(--bg-darker);
+  color: var(--text-main);
+  direction: rtl;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* 2. الحاوية الرئيسية */
+.main-container {
+  max-width: 600px; /* تحديد عرض مناسب للموبايل والتطبيق */
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: radial-gradient(circle at top left, #1e1b4b 0%, var(--bg-darker) 100%);
+}
+
+/* 3. الهيدر (Header) */
 .user-header {
-  padding: 16px;
-  background: var(--tg-theme-bg-color, var(--bg));
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: var(--glass-border);
+  backdrop-filter: blur(12px);
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 
 .user-avatar {
   width: 55px;
   height: 55px;
-  border-radius: 16px;
-  border: 2px solid var(--tg-theme-button-color, var(--primary));
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  padding: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 15px var(--primary-glow);
 }
 
-.user-name {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.user-username {
-  font-size: 13px;
-  opacity: 0.6;
-}
-
-.header-right {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.user-name { font-size: 1.1rem; font-weight: 700; color: white; }
+.user-username { font-size: 0.8rem; color: var(--text-muted); }
 
 .header-balance {
-  background: var(--tg-theme-button-color, var(--primary));
-  padding: 7px 18px;
-  border-radius: 12px;
-  color: var(--tg-theme-button-text-color, #fff);
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+  padding: 6px 16px;
+  border-radius: 50px;
+  color: white;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
+/* 4. نظام الإشعارات */
 .notif-bell {
-  font-size: 22px;
-  cursor: pointer;
   position: relative;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: var(--transition);
 }
+
+.notif-bell:hover { transform: rotate(15deg); }
 
 .red-dot {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  top: -2px;
-  right: 0;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
   background: var(--danger);
   border-radius: 50%;
+  box-shadow: 0 0 10px var(--danger);
+  animation: pulse 2s infinite;
 }
 
-/* =========================================================
-     NOTIFICATION BOX
-========================================================= */
-.notif-box {
-  margin-top: 15px;
-  background: var(--card);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-  animation: fade 0.25s ease;
-}
-
-.notif-item {
-  display: flex;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.notif-item:last-child {
-  border-bottom: none;
-}
-
-.notif-item img {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-}
-
-/* =========================================================
-     TABS
-========================================================= */
+/* 5. التبويبات (Tabs) */
 .tabs-container {
-  display: grid;
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
   gap: 8px;
-  padding: 12px;
 }
 
 .tab-button {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  padding: 11px;
-  border-radius: 12px;
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
   font-weight: 600;
-  font-size: 15px;
-  color: var(--text);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: var(--transition);
 }
 
 .tab-button.active {
-  background: var(--tg-theme-button-color, var(--primary));
-  color: var(--tg-theme-button-text-color, #fff);
-  border-color: transparent;
-  transform: scale(1.02);
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* =========================================================
-     PRODUCT CARDS
-========================================================= */
+/* 6. شبكة المنتجات (Products) */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  padding: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
 }
 
 .product-card {
-  background: var(--card);
-  padding: 12px;
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: var(--glass-border);
+  transition: var(--transition);
   cursor: pointer;
-  transition: 0.15s;
 }
 
 .product-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-5px);
+  border-color: var(--primary);
+  box-shadow: 0 12px 20px -10px rgba(0,0,0,0.5);
 }
 
 .product-image {
   width: 100%;
-  border-radius: 14px;
+  height: 130px;
+  object-fit: cover;
+  filter: brightness(0.9);
 }
 
-.p-info {
-  margin-top: 8px;
-  display: flex;
-  justify-content: space-between;
-}
+.p-info { padding: 12px; text-align: center; }
+.p-info h3 { font-size: 0.9rem; margin-bottom: 6px; color: var(--text-main); }
+.p-info span { color: var(--secondary); font-weight: 800; font-size: 1rem; }
 
-.p-info h3 {
-  font-size: 14px;
-  margin: 0;
-}
-
-.p-info span {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-/* =========================================================
-     HISTORY
-========================================================= */
-.history-list {
-  padding: 14px;
-}
-
+/* 7. سجل العمليات (History) */
 .history-item {
-  background: var(--card);
-  padding: 12px;
-  border-radius: 14px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-  display: flex;
-  justify-content: space-between;
-  border: 1px solid var(--border);
-}
-
-.status-icon {
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-}
-
-.status-icon.completed {
-  background: rgba(52,197,89,0.20);
-}
-
-.status-icon.pending {
-  background: rgba(255,195,0,0.25);
-}
-
-.status-icon.rejected {
-  background: rgba(255,70,70,0.25);
-}
-
-.history-desc {
-  font-size: 14px;
-}
-
-.history-date {
-  opacity: 0.5;
-  font-size: 12px;
-}
-
-.history-amount {
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.plus { color: var(--success); }
-.minus { color: var(--danger); }
-
-/* =========================================================
-     ADMIN PANEL
-========================================================= */
-.admin-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
   padding: 14px;
-}
-
-.admin-card, .admin-user-row {
-  padding: 12px;
-  background: var(--card);
-  border-radius: 14px;
-  margin-bottom: 10px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-right: 4px solid transparent;
 }
 
-.btn-ok, .btn-no, .btn-blue {
-  padding: 8px 14px;
-  border-radius: 10px;
-  color: white;
+.history-item:has(.plus) { border-right-color: var(--success); }
+.history-item:has(.minus) { border-right-color: var(--danger); }
+
+/* 8. الأزرار العامة */
+.btn {
+  padding: 8px 16px;
   border: none;
-  font-size: 14px;
+  border-radius: 8px;
   font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
 }
 
-.btn-ok { background: var(--success); }
-.btn-no { background: var(--danger); }
-.btn-blue { background: var(--primary); }
+.btn:active { transform: scale(0.95); }
+.btn-ok { background: var(--success); color: white; }
+.btn-no { background: var(--danger); color: white; }
+.btn-blue { background: var(--primary); color: white; }
 
-/* =========================================================
-     FOOTER
-========================================================= */
+/* 9. تأثيرات التحميل (Loading) */
+.loading-spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid rgba(108, 92, 231, 0.1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+  margin: 50px auto;
+}
+
+/* 10. التذييل (Footer) */
 .footer {
   text-align: center;
-  padding: 20px;
-  opacity: .5;
+  padding: 30px 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
 }
 
-/* =========================================================
-     BANNED SCREEN
-========================================================= */
-.banned-screen {
-  height: 100vh;
-  display: grid;
-  place-items: center;
-  text-align: center;
+.footer span { color: var(--primary); }
+
+/* Keyframes */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-/* =========================================================
-     ANIMATIONS
-========================================================= */
-@keyframes fade {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
