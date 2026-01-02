@@ -216,11 +216,11 @@ body {
   top: 100px;
   right: 1rem;
   left: 1rem;
-  background: #1e293b;
+  background: #0f172a;
   border-radius: var(--radius-lg);
   border: 1px solid rgba(124, 58, 237, 0.4);
-  z-index: 9999;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
   max-height: 500px;
   overflow-y: auto;
   animation: slideIn 0.3s ease;
@@ -294,6 +294,8 @@ body {
   margin-bottom: var(--spacing-lg);
   gap: 6px;
   box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 1;
 }
 
 .tab-button {
