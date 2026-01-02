@@ -206,7 +206,7 @@ body {
 /* صندوق الإشعارات - في المنتصف */
 .notif-box {
   position: fixed;
-  top: 50%;
+  top: 30%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: calc(100% - 2rem);
