@@ -15,15 +15,13 @@ export default function Home() {
   const [notifs, setNotifs] = useState<any[]>([]) 
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [], users: [] })
-  
-  // حالة جديدة لمراقبة تحميل البيانات داخل التبويبات
   const [tabLoading, setTabLoading] = useState(false)
 
   const isFetching = useRef(false);
 
   const refreshData = useCallback(async (isInitial = false) => {
     if (!user?.id || user.isBanned || isFetching.current) return;
-    if (isInitial) setTabLoading(true); // تشغيل الانتظار عند الطلب اليدوي
+    if (isInitial) setTabLoading(true);
     
     isFetching.current = true;
     try {
@@ -171,14 +169,13 @@ export default function Home() {
 
         {activeTab === 'history' && (
           <div className="history-list">
-            {/* رسالة الانتظار باللون البرتقالي */}
             {tabLoading ? <div style={{textAlign:'center', padding:'20px', color:'#ffa500', fontWeight:'bold'}}>انتظر لحظة...</div> : 
              history.length === 0 ? <p style={{textAlign:'center', opacity:0.5}}>لا توجد عمليات</p> :
              history.map((h: any) => (
               <div key={h.id} className="history-item">
                 <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                   <span className={`status-text status-${h.status || 'pending'}`}>
-                    {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : ' المراجعة'}
+                    {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
                   </span>
                   <div><div style={{fontSize:'0.9rem'}}>{h.description}</div><small style={{opacity:0.5}}>{new Date(h.createdAt).toLocaleDateString()}</small></div>
                 </div>
@@ -195,18 +192,28 @@ export default function Home() {
                 <h4 style={{margin:'10px 0'}}>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
                 {adminData.orders.map((o:any) => (
                   <div key={o.id} className="admin-card">
-                    <div style={{fontSize:'0.85rem', marginBottom:'8px'}}>👤 <b>{o.user?.firstName || o.telegramId}</b> <br/>🛍️ {o.description}</div>
+                    {/* تحديث عرض البيانات: الاسم واليوزر بلون مميز */}
+                    <div style={{fontSize:'0.85rem', marginBottom:'10px'}}>
+                      <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #ffffff10', paddingBottom:'5px', marginBottom:'5px'}}>
+                        <span>👤 <b>{o.user?.firstName || 'بدون اسم'}</b></span>
+                        <span style={{color:'#ffa500', fontWeight:'bold'}}>@{o.user?.username || 'no_user'}</span>
+                      </div>
+                      <div style={{opacity:0.6, fontSize:'0.75rem'}}>🆔 ID: {o.telegramId}</div>
+                      <div style={{marginTop:'5px'}}>🛍️ {o.description}</div>
+                    </div>
+                    
                     <div className="admin-btns">
                       <button className="btn-mini" style={{background:'var(--success)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'completed', telegramId: o.telegramId})}>قبول</button>
                       <button className="btn-mini" style={{background:'var(--danger)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'rejected', telegramId: o.telegramId})}>رفض</button>
                     </div>
                   </div>
                 ))}
+                
                 <h4 style={{margin:'20px 0 10px 0'}}>👥 قائمة الأعضاء</h4>
                 <div className="admin-card">
                   {adminData.users.map((u:any) => (
                     <div key={u.id} className="user-row">
-                      <div><b>{u.firstName}</b><br/><small>{u.points} XP</small></div>
+                      <div><b>{u.firstName}</b><br/><small style={{color:'#ffa500'}}>@{u.username || 'unknown'}</small></div>
                       <div className="admin-btns">
                         <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
                         <button className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('العنوان'); const m=prompt('الرسالة'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
