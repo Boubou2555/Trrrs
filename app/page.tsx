@@ -16,14 +16,14 @@ export default function Home() {
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [], users: [] })
 
-  // دالة التحديث الشاملة (نقاط، سجل، إشعارات)
+  // دالة تحديث البيانات لجلب النقاط والسجل والإشعارات فوراً
   const refreshData = useCallback(async () => {
     if (!user?.id) return;
     try {
       const res = await fetch(`/api/increase-points?telegramId=${user.id}`);
       const d = await res.json();
       
-      // التحقق من الحظر فورا
+      // التحقق من حالة الحظر وعرض الرسالة
       if (d.user?.status === 1) {
         setUser((prev: any) => ({ ...prev, isBanned: true, banReason: d.user.banReason }));
       } else {
@@ -43,7 +43,7 @@ export default function Home() {
         body: JSON.stringify({...u, action: 'login_check'}) 
       })
       .then(r => r.json()).then(data => {
-        setUser({ ...u, points: data.points || 0, isBanned: data.user?.status === 1 });
+        setUser({ ...u, points: data.points || 0, isBanned: data.user?.status === 1, banReason: data.user?.banReason });
         setLoading(false);
       });
     } else { setLoading(false); }
@@ -64,6 +64,7 @@ export default function Home() {
     } catch (e) { console.error(e) }
   }
 
+  // دالة العمليات الإدارية مع تحديث فوري للنقاط
   const adminAction = async (payload: any) => {
     try {
       const res = await fetch('/api/increase-points', { 
@@ -72,9 +73,8 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.success) {
-        // تحديث البيانات فورا بعد أي عملية للأدمن
         await loadAdminData();
-        await refreshData();
+        await refreshData(); // التحديث الفوري للرصيد والسجل
         return true;
       }
     } catch (e) { console.error(e) }
@@ -90,16 +90,19 @@ export default function Home() {
   }
 
   if (loading) return <div className="loading-spinner"></div>
+  
+  // شاشة الحظر مع إرجاع سبب الحظر
   if (user?.isBanned) return (
     <div className="main-container" style={{textAlign:'center', paddingTop:'100px'}}>
-      <h1 style={{color:'var(--danger)'}}>🚫 حسابك محظور</h1>
-      <p>{user.banReason || "لقد تم حظرك لمخالفة القوانين"}</p>
+      <h1 style={{color:'var(--danger)', fontSize:'2rem'}}>🚫 حسابك محظور</h1>
+      <p style={{marginTop:'20px', fontSize:'1.1rem'}}>{user.banReason || "لقد تم حظرك لمخالفة قوانين المنصة."}</p>
+      <div style={{marginTop:'30px', color:'var(--text-muted)'}}>تواصل مع الإدارة للمزيد من المعلومات.</div>
     </div>
   )
 
   return (
     <div className="main-container">
-      {/* الهيدر مع الجرس أسفل الرصيد */}
+      {/* الهيدر: الجرس أسفل الرصيد */}
       <div className="user-header">
         <div className="header-left">
           <img src={user?.photo_url || ''} className="user-avatar" alt="avatar" />
@@ -116,7 +119,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* نافذة الإشعارات */}
       {showNotif && (
         <div className="notif-box">
           <div className="notif-header">
@@ -132,7 +134,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* التبويبات */}
       <div className="tabs-container">
         <button onClick={()=>setActiveTab('products')} className={activeTab==='products'?'tab-button active':'tab-button'}>المنتجات</button>
         <button onClick={()=>setActiveTab('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>الهدية</button>
@@ -172,14 +173,20 @@ export default function Home() {
         {activeTab === 'history' && (
           <div className="history-list">
             {history.map((h: any) => (
-              <div key={h.id} className="history-item">
+              <div key={h.id} className="history-item"> {/* السجل داخل إطارات */}
                 <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                  <span className={`status-text status-${h.status}`}>
+                  {/* لون المراجعة برتقالي */}
+                  <span className={`status-text status-${h.status || 'pending'}`}>
                     {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
                   </span>
-                  <div><div>{h.description}</div><small style={{color:'var(--text-muted)'}}>{new Date(h.createdAt).toLocaleTimeString()}</small></div>
+                  <div>
+                    <div style={{fontSize:'0.9rem'}}>{h.description}</div>
+                    <small style={{color:'var(--text-muted)'}}>{new Date(h.createdAt).toLocaleTimeString()}</small>
+                  </div>
                 </div>
-                <div style={{fontWeight:'bold'}} className={h.amount > 0 ? 'plus' : 'minus'}>{h.amount > 0 ? `+${h.amount}` : h.amount} XP</div>
+                <div style={{fontWeight:'bold'}} className={h.amount > 0 ? 'plus' : 'minus'}>
+                  {h.amount > 0 ? `+${h.amount}` : h.amount} XP
+                </div>
               </div>
             ))}
           </div>
@@ -223,8 +230,11 @@ export default function Home() {
                       if(title && msg) adminAction({action:'send_notif', telegramId: u.telegramId, title, message: msg});
                     }}>🔔</button>
                     <button className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
+                      const status = u.status === 1 ? 'unban' : 'ban';
+                      let reason = "";
+                      if (status === 'ban') reason = prompt("سبب الحظر؟") || "مخالفة القوانين";
                       if(confirm(u.status === 1 ? "فك الحظر؟" : "حظر المستخدم؟")) {
-                        adminAction({action:'toggle_ban', telegramId: u.telegramId, status: u.status === 1 ? 'unban' : 'ban', reason: 'مخالفة'});
+                        adminAction({action:'toggle_ban', telegramId: u.telegramId, status, reason});
                       }
                     }}>{u.status === 1 ? '🔓' : '🚫'}</button>
                   </div>
