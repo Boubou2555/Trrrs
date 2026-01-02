@@ -1,379 +1,70 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
-
 /* ==========================================
-   المتغيرات العامة
+   نظام الإشعارات - الإصلاح النهائي
    ========================================== */
-:root {
-  --primary: #7c3aed;
-  --primary-dark: #6d28d9;
-  --primary-light: #a78bfa;
-  --secondary: #06b6d4;
-  --secondary-dark: #0891b2;
-  
-  --bg-darker: #0f172a;
-  --bg-dark: #1e293b;
-  --bg-card: rgba(255, 255, 255, 0.06);
-  --bg-card-hover: rgba(255, 255, 255, 0.1);
-  
-  --text-light: #f1f5f9;
-  --text-muted: rgba(241, 245, 249, 0.6);
-  
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --info: #3b82f6;
-  
-  --border-light: rgba(255, 255, 255, 0.1);
-  --border-lighter: rgba(255, 255, 255, 0.05);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
-  
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 15px;
-  --radius-xl: 20px;
-  --spacing-xs: 5px;
-  --spacing-sm: 10px;
-  --spacing-md: 15px;
-  --spacing-lg: 20px;
-  
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
-  --transition-slow: 0.5s ease;
-}
 
-/* ==========================================
-   إعدادات عامة
-   ========================================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-body {
-  font-family: 'Tajawal', sans-serif;
-  background-color: var(--bg-darker);
-  color: var(--text-light);
-  direction: rtl;
-  overflow-x: hidden;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* ==========================================
-   الحاوية الرئيسية
-   ========================================== */
-.main-container {
-  padding: 1rem;
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-darker) 0%, #1e293b 50%, #0f172a 100%);
-  padding-bottom: 80px;
-}
-
-/* ==========================================
-   هيدر المستخدم
-   ========================================== */
-.user-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(124, 58, 237, 0.3);
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  transition: var(--transition-normal);
-}
-
-.user-header:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px solid var(--primary);
-  object-fit: cover;
-  transition: var(--transition-normal);
-}
-
-.user-avatar:hover {
-  transform: scale(1.05);
-  border-color: var(--primary-light);
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.user-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-light);
-}
-
-.user-username {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
+/* 1. تأكد أن الحاوية الأب للجرس تملك position: relative */
 .header-right {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-.header-balance {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(6, 182, 212, 0.25));
-  padding: 6px 14px;
-  border-radius: var(--radius-xl);
-  color: #a78bfa;
-  font-weight: 700;
-  font-size: 0.9rem;
-  border: 1px solid rgba(124, 58, 237, 0.4);
-  transition: var(--transition-fast);
-}
-
-.header-balance:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
-}
-
-/* ==========================================
-   نظام الإشعارات (الإصلاح المطلوب)
-   ========================================== */
 .notif-bell {
-  position: relative; /* لجعل الصندوق يتحرك بالنسبة للجرس */
+  position: relative; 
   font-size: 1.4rem;
   cursor: pointer;
   display: flex;
   align-items: center;
-  transition: var(--transition-fast);
   padding: 8px;
-  border-radius: 50%;
 }
 
-.notif-bell:hover {
-  background: rgba(255, 255, 255, 0.05);
-  transform: scale(1.1);
-}
-
-.red-dot {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 10px;
-  height: 10px;
-  background: var(--danger);
-  border-radius: 50%;
-  border: 2px solid var(--bg-darker);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.6; }
-}
-
-/* تم تعديل الـ Position هنا ليظهر الصندوق منسدلاً أسفل الأيقونة مباشرة */
+/* 2. تعديل صندوق الإشعارات ليكون منسدلاً جهة اليمين */
 .notif-box {
   position: absolute;
-  top: 100%;
-  left: 0;
-  width: 280px; /* عرض محدد وأكثر توازناً */
-  background: var(--bg-dark);
+  top: 60px; /* المسافة من أعلى الهيدر */
+  right: 0;  /* يلتصق بجهة اليمين تماماً تحت الجرس */
+  width: 260px; /* تصغير العرض ليتناسب مع الموبايل ولا يغطي الوسط */
+  background: #1e293b; /* نفس لون الخلفية في الصورة */
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
-  padding: 0.5rem;
-  z-index: 1000;
+  padding: 10px;
+  z-index: 2000; /* قيمة عالية ليكون فوق كل شيء */
   box-shadow: var(--shadow-lg);
-  max-height: 350px;
+  max-height: 380px;
   overflow-y: auto;
-  margin-top: 10px;
   animation: slideDown 0.3s ease;
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* 3. تنسيق محتوى الإشعار ليصبح مرتباً */
 .notif-item {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
+  flex-direction: row; /* جعل الأيقونة والاسم بجانب بعض */
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px;
   border-bottom: 1px solid var(--border-lighter);
-  transition: var(--transition-fast);
-  border-radius: var(--radius-sm);
   text-align: right;
 }
 
-.notif-item:last-child {
-  border-bottom: none;
+.notif-item img, .notif-item .bell-icon-inside {
+  width: 25px;
+  height: 25px;
+  order: 2; /* وضع الأيقونة على اليسار أو اليمين حسب الرغبة */
 }
 
-.notif-item:hover {
-  background: var(--bg-card);
+.notif-info {
+  flex: 1;
+  order: 1;
 }
 
-.notif-item img {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  flex-shrink: 0;
-  margin-top: 3px;
-}
-
-.notif-item b {
-  font-size: 0.85rem;
-  display: block;
-  margin-bottom: 2px;
-  color: var(--text-light);
-}
-
-.notif-item p {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.3;
-}
-
-/* ==========================================
-   التبويبات (Tabs)
-   ========================================== */
-.tabs-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  background: var(--bg-card);
-  padding: 6px;
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-lg);
-  gap: 6px;
-  box-shadow: var(--shadow-sm);
-}
-
-.tab-button {
-  padding: 12px 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-light);
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: var(--transition-fast);
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.tab-button.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
-}
-
-/* ==========================================
-   بقية الكود الأصلي
-   ========================================== */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: var(--spacing-lg);
-}
-
-.product-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid var(--border-light);
-  transition: var(--transition-normal);
-  cursor: pointer;
-}
-
-.product-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--primary);
-}
-
-.product-image {
-  width: 100%;
-  height: 130px;
-  object-fit: cover;
-}
-
-.p-info {
-  padding: 12px;
-  text-align: center;
-}
-
-.history-item {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  padding: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.admin-section h4 {
-  margin: var(--spacing-md) 0;
-  color: var(--primary);
-  border-right: 3px solid var(--primary);
-  padding-right: 10px;
-}
-
-.admin-card {
-  background: var(--bg-card);
-  padding: 14px;
-  border-radius: var(--radius-md);
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.admin-btns { display: flex; gap: 8px; }
-
-.admin-btns button {
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
-  border: none;
-  color: white;
-  cursor: pointer;
-}
-
-.btn-ok { background: var(--success); }
-.btn-no { background: var(--danger); }
-.btn-blue { background: var(--primary); }
-
-.footer {
-  text-align: center;
-  padding: var(--spacing-lg) 0;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
+/* إلغاء الـ Fixed إذا كان موجوداً في كود قديم */
 @media (max-width: 480px) {
-  .products-grid { grid-template-columns: repeat(2, 1fr); }
-  .notif-box { width: 250px; left: -50px; } /* تعديل بسيط للموبايل لضمان عدم خروجه عن الشاشة */
+  .notif-box {
+    position: absolute !important;
+    right: 5px; /* ترك مسافة بسيطة عن حافة الشاشة اليمنى */
+    left: auto;
+    transform: none;
+  }
 }
