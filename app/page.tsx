@@ -62,7 +62,9 @@ export default function Home() {
     const data = await res.json();
     if (data.success) {
       loadAdminData();
-      if (payload.telegramId === user?.id) { setUser((prev: any) => ({ ...prev, points: data.points })); }
+      if (payload.telegramId === user?.id) {
+        setUser((prev: any) => ({ ...prev, points: data.points || prev.points }));
+      }
     }
     return data;
   }
@@ -72,6 +74,7 @@ export default function Home() {
 
   return (
     <div className="main-container">
+      {/* الهيدر */}
       <div className="user-header">
         <div className="header-left">
           <img src={user?.photo_url || ''} className="user-avatar" alt="" />
@@ -88,16 +91,20 @@ export default function Home() {
         </div>
       </div>
 
+      {/* نافذة الإشعارات - مع صورة المنتج */}
       {showNotif && (
         <div className="notif-box">
           <div className="notif-header">
             <b>🔔 الإشعارات</b> 
             <span onClick={() => {setShowNotif(false); adminAction({action:'read_notifs', telegramId:user.id})}}>✖</span>
           </div>
-          {notifs.map((n: any) => (
+          {notifs.length === 0 ? <p className="empty-msg">لا توجد إشعارات</p> : notifs.map((n: any) => (
             <div key={n.id} className="notif-item">
-              <img src={user?.photo_url} alt="" className="notif-img" />
-              <div className="notif-details"><b>{n.title}</b><p>{n.message}</p></div>
+              <img src={n.imageUrl || 'https://via.placeholder.com/50'} className="notif-img" alt="" />
+              <div className="notif-details">
+                <b>{n.title}</b>
+                <p>{n.message}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -119,7 +126,7 @@ export default function Home() {
                 if (user.points < p.price) return tg.showAlert('رصيدك غير كافٍ!');
                 tg.showConfirm(`تأكيد طلب ${p.title}؟`, async (ok:any) => {
                   if(ok) {
-                    const res = await adminAction({action:'purchase_product', telegramId:user.id, price:p.price, productTitle:p.title});
+                    const res = await adminAction({action:'purchase_product', telegramId:user.id, price:p.price, productTitle:p.title, imageUrl: p.imageUrl});
                     if(res.success) { setUser((prev:any)=>({...prev, points: res.newPoints})); tg.showAlert('تم الطلب!'); refreshData(); }
                   }
                 })
@@ -133,15 +140,18 @@ export default function Home() {
 
         {activeTab === 'tasks' && <Page1 onPointsUpdate={(p) => setUser((prev:any)=>({...prev, points:p}))} />}
 
+        {/* السجل مع أيقونات الحالة */}
         {activeTab === 'history' && (
            <div className="history-list">
-             {history.map((h: any) => (
+             {history.length === 0 ? <p className="empty-msg">السجل فارغ</p> : history.map((h: any) => (
                <div key={h.id} className="history-item">
                  <div className="history-left">
-                   <div className={`status-dot ${h.status}`}></div>
-                   <div className="history-info">
+                   <div className={`status-icon ${h.status}`}>
+                     {h.status === 'completed' ? '✅' : h.status === 'rejected' ? '❌' : '⏳'}
+                   </div>
+                   <div className="history-details">
                      <p className="history-desc">{h.description}</p>
-                     <span className="history-date">{new Date(h.createdAt).toLocaleDateString('ar-EG')}</span>
+                     <span className="history-date">{new Date(h.createdAt).toLocaleDateString('ar-DZ')}</span>
                    </div>
                  </div>
                  <div className={`history-amount ${h.amount > 0 ? 'plus' : 'minus'}`}>
@@ -152,25 +162,30 @@ export default function Home() {
            </div>
         )}
 
+        {/* لوحة الإدارة المعدلة */}
         {activeTab === 'admin' && (
           <div className="admin-section">
-            <h4>📦 الطلبات</h4>
+            <h4>📦 طلبات المنتجات</h4>
             {adminData.orders.map((o:any) => (
               <div key={o.id} className="admin-card">
-                <p>ID: {o.telegramId} | {o.description}</p>
+                <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+                   <img src={o.imageUrl} style={{width:'40px', borderRadius:'5px'}} />
+                   <p>ID: {o.telegramId} <br/> {o.description}</p>
+                </div>
                 <div className="admin-btns">
-                  <button className="btn-ok" onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'completed'})}>قبول</button>
-                  <button className="btn-no" onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'rejected'})}>رفض</button>
+                  <button className="btn-ok" onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'completed'})}>✅</button>
+                  <button className="btn-no" onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'rejected'})}>❌</button>
                 </div>
               </div>
             ))}
-            <h4 style={{marginTop:'20px'}}>👥 الأعضاء</h4>
+            
+            <h4 style={{marginTop:'20px'}}>👥 إدارة الأعضاء</h4>
             {adminData.users.map((u:any) => (
               <div key={u.id} className="admin-user-row">
                 <div className="user-meta"><span>{u.firstName}</span><b>{u.points} XP</b></div>
                 <div className="admin-btns">
                   <button className="btn-ok" onClick={() => { const v = prompt('المبلغ:'); if(v) adminAction({action:'manage_points', telegramId:u.telegramId, amount:v}); }}>💰</button>
-                  <button style={{background:'var(--primary)'}} onClick={() => { const t = prompt('العنوان:'); const m = prompt('النص:'); if(t && m) adminAction({action:'send_notif', telegramId:u.telegramId, title:t, message:m}); }}>🔔</button>
+                  <button style={{background:'var(--primary)'}} onClick={() => { const t = prompt('العنوان:'); const m = prompt('النص:'); if(t && m) adminAction({action:'send_notif', telegramId:u.telegramId, title:t, message:m, imageUrl: u.photo_url}); }}>🔔</button>
                   <button className="btn-no" onClick={() => { const r = prompt('السبب:'); if(r) adminAction({action:'toggle_ban', telegramId:u.telegramId, status:'ban', reason:r}); }}>🚫</button>
                 </div>
               </div>
