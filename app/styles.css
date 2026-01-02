@@ -222,8 +222,29 @@ body {
   z-index: 10000;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
   max-height: 500px;
-  overflow-y: auto;
+  overflow: hidden;
   animation: slideIn 0.3s ease;
+}
+
+/* إخفاء كل المحتوى خلف الصندوق */
+.notif-box::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: -1;
+  backdrop-filter: blur(5px);
+}
+
+.notif-box-content {
+  max-height: 500px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 2;
+  background: #0f172a;
 }
 
 @keyframes slideIn {
