@@ -26,7 +26,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     if (adsgram) {
       setNotification('📺 جاري تحميل الإعلان...');
       // المعرف الجديد المستخرج من الصورة الأخيرة
-      const AdController = adsgram.init({ blockId: "20425" }); 
+      const AdController = adsgram.init({ blockId: "20471" }); 
       
       AdController.show()
         .then((result: any) => {
