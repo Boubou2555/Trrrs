@@ -1,157 +1,113 @@
-'use client'
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-import { useEffect, useState } from 'react'
+const prisma = new PrismaClient();
+const ADMIN_ID = 5149849049;
+const MAX_ADS = 10;
 
-declare global {
-  interface Window {
-    Telegram?: any;
-    Adsgram?: any;
-    show_10400479?: () => Promise<void>;
-  }
+export async function POST(req: Request) {
+    try {
+        const body = await req.json();
+        const { action, telegramId, amount, transactionId, adminId, reason, status, title, message } = body;
+        const userId = parseInt(telegramId || body.id);
+
+        if (action === 'read_notifs') {
+            await prisma.notification.updateMany({
+                where: { telegramId: userId, isRead: false },
+                data: { isRead: true }
+            });
+            return NextResponse.json({ success: true });
+        }
+
+        if (adminId === ADMIN_ID) {
+            if (action === 'manage_points') {
+                const val = parseInt(amount);
+                const updated = await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: val } } });
+                await prisma.transaction.create({ data: { telegramId: userId, type: 'admin', description: val > 0 ? '🎁 مكافأة من المسؤول' : '⚠️ خصم من المسؤول', amount: val, status: 'completed' } });
+                return NextResponse.json({ success: true, points: updated.points });
+            }
+            if (action === 'send_notif') {
+                await prisma.notification.create({ data: { telegramId: userId, title, message } });
+                return NextResponse.json({ success: true });
+            }
+            if (action === 'update_order') {
+                await prisma.transaction.update({ where: { id: transactionId }, data: { status: status } });
+                return NextResponse.json({ success: true });
+            }
+            if (action === 'toggle_ban') {
+                await prisma.user.update({ 
+                    where: { telegramId: userId }, 
+                    data: { status: status === 'ban' ? 1 : 0, banReason: status === 'ban' ? reason : "" } 
+                });
+                return NextResponse.json({ success: true });
+            }
+        }
+
+        const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
+        if (checkUser?.status === 1 && action !== 'login_check') {
+            return NextResponse.json({ success: false, banned: true, reason: checkUser.banReason });
+        }
+
+        // --- إضافة نقاط الإعلانات (تستدعى من الكود الأمامي Page1) ---
+        if (action === 'watch_ad') {
+            if (checkUser && checkUser.adsCount >= MAX_ADS) {
+                return NextResponse.json({ success: false, message: 'وصلت للحد الأقصى' });
+            }
+            const user = await prisma.user.update({ 
+                where: { telegramId: userId }, 
+                data: { points: { increment: 1 }, adsCount: { increment: 1 } } 
+            });
+            await prisma.transaction.create({ data: { telegramId: userId, type: 'ad', description: 'مشاهدة إعلان', amount: 1, status: 'completed' } });
+            return NextResponse.json({ success: true, newPoints: user.points, newAdsCount: user.adsCount });
+        }
+
+        if (action === 'purchase_product') {
+            const user = await prisma.user.update({ where: { telegramId: userId }, data: { points: { decrement: body.price } } });
+            await prisma.transaction.create({ data: { telegramId: userId, type: 'purchase', description: `طلب: ${body.productTitle}`, amount: -body.price, status: 'pending' } });
+            return NextResponse.json({ success: true, newPoints: user.points });
+        }
+
+        const user = await prisma.user.upsert({
+            where: { telegramId: userId },
+            update: { username: body.username, firstName: body.first_name, photoUrl: body.photo_url },
+            create: { telegramId: userId, username: body.username, firstName: body.first_name, photoUrl: body.photo_url, points: 0, adsCount: 0 }
+        });
+        return NextResponse.json({ success: true, points: user.points, banned: user.status === 1, reason: user.banReason, user });
+    } catch (e) { return NextResponse.json({ success: false }); }
 }
 
-export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: number) => void }) {
-  const [user, setUser] = useState<any>(null)
-  const [adsCount, setAdsCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-  const [notification, setNotification] = useState('')
-  const MAX_ADS = 10 
+export async function GET(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const userId = parseInt(searchParams.get('telegramId') || "0");
+    const adminId = parseInt(searchParams.get('adminId') || "0");
+    const action = searchParams.get('action');
 
-  const ADSGRAM_BLOCK_ID = "int-20419"; // معرف Adsgram الخاص بك
-
-  useEffect(() => {
-    const tg = (window as any).Telegram?.WebApp
-    if (tg?.initDataUnsafe?.user) {
-      const userData = tg.initDataUnsafe.user
-      setUser(userData)
-      
-      // جلب البيانات الأولية من MongoDB
-      fetch(`/api/increase-points?telegramId=${userData.id}`)
-        .then(res => res.json())
-        .then(data => { 
-          if (data.success && data.user) {
-            setAdsCount(data.user.adsCount || 0) 
-          }
-        })
-    }
-  }, [])
-
-  const handleWatchAd = async () => {
-    if (!user || adsCount >= MAX_ADS || isLoading) return;
-    setIsLoading(true);
-
-    // الحالة الأولى: Adsgram (لأول 5 إعلانات)
-    if (adsCount < 5) {
-      const adsgram = (window as any).Adsgram;
-      
-      if (adsgram) {
-        setNotification('📺 جاري تحميل إعلان Adsgram...');
-        const AdController = adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+    // --- استقبال طلب Adsgram (Server-to-Server) ---
+    if (action === 'watch_ad' && userId > 0) {
+        const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
         
-        AdController.show()
-          .then(() => {
-            processReward(); // نجاح المشاهدة
-          })
-          .catch((err: any) => {
-            setIsLoading(false);
-            setNotification(err?.error === 'not_filled' ? '😔 لا يوجد إعلان حالياً' : '❌ فشل العرض');
-          });
-      } else {
-        // محاولة إعادة الفحص إذا لم تكن المكتبة جاهزة فوراً
-        setNotification('⚠️ النظام يجهز الإعلان، انتظر لحظة...');
-        setTimeout(() => {
-          setIsLoading(false);
-          handleWatchAd(); 
-        }, 2000);
-      }
-    } 
-    // الحالة الثانية: Monetag (من الإعلان 6 إلى 10)
-    else {
-      if (typeof (window as any).show_10400479 === 'function') {
-        setNotification('📺 جاري تحميل إعلان Monetag...');
-        (window as any).show_10400479()
-          .then(() => processReward())
-          .catch(() => {
-            setIsLoading(false);
-            setNotification('❌ فشل تشغيل Monetag');
-          });
-      } else {
-        setNotification('⚠️ نظام Monetag غير جاهز');
-        setIsLoading(false);
-      }
+        if (checkUser && checkUser.adsCount < MAX_ADS) {
+            const updated = await prisma.user.update({
+                where: { telegramId: userId },
+                data: { points: { increment: 1 }, adsCount: { increment: 1 } }
+            });
+            await prisma.transaction.create({ 
+                data: { telegramId: userId, type: 'ad', description: 'Adsgram Reward (Auto)', amount: 1, status: 'completed' } 
+            });
+            // نرسل رد 200 لـ Adsgram لنؤكد نجاح المكافأة
+            return new Response('OK', { status: 200 });
+        }
     }
-  };
 
-  const processReward = async () => {
-    setNotification('⏳ جاري تسجيل جائزتك في MongoDB...');
-    try {
-      const res = await fetch('/api/increase-points', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: user.id, action: 'watch_ad' }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAdsCount(data.newAdsCount); // تحديث العداد
-        onPointsUpdate(data.newPoints); // تحديث الرصيد
-        setNotification('🎉 حصلت على 1 XP بنجاح!');
-      }
-    } catch (e) {
-      setNotification('❌ خطأ في الاتصال بالسيرفر');
-    } finally {
-      setIsLoading(false);
+    if (adminId === ADMIN_ID) {
+        const orders = await prisma.transaction.findMany({ where: { status: 'pending' }, orderBy: { createdAt: 'desc' } });
+        const users = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
+        return NextResponse.json({ success: true, orders, users });
     }
-  };
-
-  const progress = (adsCount / MAX_ADS) * 100;
-
-  return (
-    <div style={{ padding: '15px 0' }}>
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: '15px',
-        padding: '20px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        textAlign: 'center'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
-          <span>المهمة اليومية ({adsCount < 5 ? 'إعلانات النوع A' : 'إعلانات النوع B'})</span>
-          <span style={{ color: '#a29bfe' }}>{Math.round(progress)}%</span>
-        </div>
-
-        {/* شريط التقدم التفاعلي */}
-        <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', marginBottom: '15px', overflow: 'hidden' }}>
-          <div style={{ 
-            width: `${progress}%`, 
-            height: '100%', 
-            background: adsCount >= MAX_ADS ? '#00b894' : 'var(--primary)', 
-            transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
-          }}></div>
-        </div>
-        
-        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '20px' }}>
-          {adsCount >= MAX_ADS ? '✅ اكتملت جميع المهام اليوم' : `مكتمل ${adsCount} من ${MAX_ADS}`}
-        </p>
-
-        <button 
-          onClick={handleWatchAd} 
-          disabled={adsCount >= MAX_ADS || isLoading}
-          style={{
-            width: '100%', padding: '15px', borderRadius: '12px', border: 'none',
-            background: adsCount >= MAX_ADS ? '#333' : 'var(--primary)',
-            color: 'white', fontWeight: 'bold', cursor: 'pointer',
-            boxShadow: adsCount >= MAX_ADS ? 'none' : '0 4px 15px rgba(0,0,0,0.2)'
-          }}
-        >
-          {isLoading ? '⏳ انتظر قليلاً...' : adsCount >= MAX_ADS ? '✅ تم اكتمال اليوم' : '📺 شاهد الإعلان واربح'}
-        </button>
-
-        {notification && (
-          <p style={{ marginTop: '15px', fontSize: '0.8rem', color: '#a29bfe', animation: 'fadeIn 0.3s' }}>
-            {notification}
-          </p>
-        )}
-      </div>
-    </div>
-  )
+    
+    const userData = await prisma.user.findUnique({ where: { telegramId: userId } });
+    const history = await prisma.transaction.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 20 });
+    const notifs = await prisma.notification.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 15 });
+    
+    return NextResponse.json({ success: true, user: userData, history, notifs });
 }
