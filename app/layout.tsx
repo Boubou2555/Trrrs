@@ -11,21 +11,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ar" dir="rtl">
       <head>
-        {/* سكريبت التليجرام الأساسي لضمان عمل التطبيق داخل Telegram */}
+        {/* سكريبت التليجرام الأساسي */}
         <Script 
           src="https://telegram.org/js/telegram-web-app.js" 
           strategy="beforeInteractive" 
         />
         
-        {/* سكريبت AdsGram الرسمي (حسب الصورة المرفقة من التوثيق) */}
-        {/* ملاحظة: هذا السكريبت ضروري لتشغيل وحدة AdController في Page1 */}
+        {/* سكريبت AdsGram الرسمي - تم وضعه كـ beforeInteractive لضمان الجاهزية */}
         <Script 
           src="https://adsgram.ai/js/adman.js" 
-          strategy="afterInteractive" 
+          strategy="beforeInteractive" 
         />
 
-        {/* سكريبت Monetag (المنطقة الإعلانية 10400479) */}
-        {/* يتم تحميله بشكل متوازٍ ليعمل عند وصول عداد الإعلانات إلى 5 */}
+        {/* سكريبت Monetag للمنطقة الإعلانية الخاصة بك */}
         <Script 
           src="//libtl.com/sdk.js" 
           data-zone="10400479" 
