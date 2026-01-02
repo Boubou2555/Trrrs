@@ -19,7 +19,7 @@ export default function Home() {
 
   const isFetching = useRef(false);
 
-  // تحديث البيانات في الخلفية
+  // تحديث البيانات في الخلفية (Polling كل 4 ثوانٍ)
   const refreshData = useCallback(async (isInitial = false) => {
     if (!user?.id || user.isBanned || isFetching.current) return;
     if (isInitial) setTabLoading(true);
@@ -28,16 +28,22 @@ export default function Home() {
     try {
       const res = await fetch(`/api/increase-points?telegramId=${user.id}`);
       const d = await res.json();
-      setHistory(d.history || []);
-      setNotifs(d.notifs || []);
-      setUser((prev: any) => prev ? { ...prev, points: d.points ?? prev.points } : null);
-    } catch (e) { console.error(e) } finally { 
+      
+      if (d.success) {
+        setHistory(d.history || []);
+        setNotifs(d.notifs || []);
+        // تحديث الرصيد من السيرفر مباشرة لضمان المزامنة
+        setUser((prev: any) => prev ? { ...prev, points: d.points ?? prev.points } : null);
+      }
+    } catch (e) { 
+      console.error("Error refreshing data:", e);
+    } finally { 
       isFetching.current = false;
       setTabLoading(false); 
     }
   }, [user?.id, user?.isBanned]);
 
-  // التحديث التلقائي للنقطة الحمراء
+  // تشغيل التحديث التلقائي للنقطة الحمراء والرصيد
   useEffect(() => {
     if (user?.id && !user.isBanned) {
       const interval = setInterval(refreshData, 4000);
@@ -45,20 +51,30 @@ export default function Home() {
     }
   }, [user?.id, user?.isBanned, refreshData]);
 
-  // دخول المستخدم
+  // تسجيل الدخول الأولي وجلب بيانات المستخدم
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user) {
       const u = tg.initDataUnsafe.user;
-      fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({...u, action: 'login_check'}) })
+      fetch('/api/increase-points', { 
+        method: 'POST', 
+        body: JSON.stringify({...u, action: 'login_check'}) 
+      })
       .then(r => r.json()).then(data => {
-        setUser({ ...u, points: data.points || 0, isBanned: data.user?.status === 1, reason: data.user?.banReason });
+        setUser({ 
+          ...u, 
+          points: data.points || 0, 
+          isBanned: data.user?.status === 1, 
+          reason: data.user?.banReason 
+        });
         setLoading(false);
       });
-    } else { setLoading(false); }
+    } else { 
+      setLoading(false); 
+    }
   }, [])
 
-  // جلب بيانات الإدارة
+  // جلب بيانات الإدارة عند فتح التبويب
   useEffect(() => {
     if (activeTab === 'history') refreshData(true);
     if (activeTab === 'admin' && user?.id === ADMIN_ID) loadAdminData();
@@ -69,24 +85,39 @@ export default function Home() {
     try {
       const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
       const data = await res.json();
-      // هنا نتوقع أن يرسل السيرفر orders تحتوي على كائن user مدمج
       setAdminData({ orders: data.orders || [], users: data.users || [] });
-    } catch (e) { console.error(e) } finally { setTabLoading(false); }
+    } catch (e) { 
+      console.error("Admin Load Error:", e);
+    } finally { 
+      setTabLoading(false); 
+    }
   }
 
+  // تنفيذ عمليات الإدارة (تحديث الرصيد، قبول/رفض، حظر)
   const adminDo = async (payload: any) => {
     try {
-      const res = await fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) });
+      const res = await fetch('/api/increase-points', { 
+        method: 'POST', 
+        body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) 
+      });
       const data = await res.json();
+      
       if (data.success) {
-        if (data.newPoints !== undefined) {
-          setUser((prev: any) => ({ ...prev, points: data.newPoints }));
+        // تحديث الرصيد الفوري إذا كان الإجراء يخص المستخدم الحالي
+        if (data.points !== undefined && payload.telegramId === user?.id) {
+          setUser((prev: any) => ({ ...prev, points: data.points }));
         }
+        if (data.newPoints !== undefined && payload.telegramId === user?.id) {
+            setUser((prev: any) => ({ ...prev, points: data.newPoints }));
+        }
+
         refreshData(); 
         if (activeTab === 'admin') loadAdminData();
       }
       return data;
-    } catch (e) { console.error(e) }
+    } catch (e) { 
+      console.error("Admin Action Error:", e);
+    }
   }
 
   const handlePointsUpdate = (newPoints: number) => {
@@ -95,6 +126,7 @@ export default function Home() {
   };
 
   if (loading) return <div className="loading-spinner"></div>
+  
   if (user?.isBanned) return (
     <div className="main-container" style={{textAlign:'center', paddingTop:'100px'}}>
       <div style={{fontSize:'80px'}}>🚫</div>
@@ -107,6 +139,7 @@ export default function Home() {
 
   return (
     <div className="main-container">
+      {/* رأس الصفحة - الهيدر */}
       <div className="user-header">
         <div className="header-left">
           <img src={user?.photo_url || ''} className="user-avatar" alt="" />
@@ -117,24 +150,37 @@ export default function Home() {
         </div>
         <div className="header-right">
           <div className="header-balance">{user?.points} XP</div>
-          <div className="notif-bell-wrapper" onClick={() => {setShowNotif(true); if(unread > 0) adminDo({action:'read_notifs', telegramId:user.id});}}>
+          <div className="notif-bell-wrapper" onClick={() => {
+            setShowNotif(true); 
+            if(unread > 0) adminDo({action:'read_notifs', telegramId:user.id});
+          }}>
             🔔 {unread > 0 && <span className="red-dot"></span>}
           </div>
         </div>
       </div>
 
+      {/* صندوق الإشعارات */}
       {showNotif && (
         <div className="notif-box">
-          <div className="notif-header"><b>🔔 الإشعارات</b><span onClick={() => setShowNotif(false)} style={{cursor:'pointer'}}>✖</span></div>
-          {notifs.length === 0 ? <p style={{padding:'20px', textAlign:'center', opacity:0.5}}>لا توجد إشعارات</p> : notifs.map((n: any) => (
+          <div className="notif-header">
+            <b>🔔 الإشعارات</b>
+            <span onClick={() => setShowNotif(false)} style={{cursor:'pointer'}}>✖</span>
+          </div>
+          {notifs.length === 0 ? (
+            <p style={{padding:'20px', textAlign:'center', opacity:0.5}}>لا توجد إشعارات</p>
+          ) : notifs.map((n: any) => (
             <div key={n.id} className="notif-item">
               <img src={n.iconUrl || 'https://i.postimg.cc/zv3hrNct/1765456939666.jpg'} className="notif-img" alt="" />
-              <div><b>{n.title}</b><p style={{fontSize:'0.8rem', opacity:0.7}}>{n.message}</p></div>
+              <div>
+                <b>{n.title}</b>
+                <p style={{fontSize:'0.8rem', opacity:0.7}}>{n.message}</p>
+              </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* قائمة التبويبات */}
       <div className="tabs-container" style={{ display: 'grid', gridTemplateColumns: user?.id === ADMIN_ID ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)' }}>
         <button onClick={()=>setActiveTab('products')} className={activeTab==='products'?'tab-button active':'tab-button'}>المنتجات</button>
         <button onClick={()=>setActiveTab('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>الهدية</button>
@@ -143,6 +189,7 @@ export default function Home() {
       </div>
 
       <div className="content">
+        {/* تبويب المنتجات */}
         {activeTab === 'products' && (
           <div className="products-grid">
             {[
@@ -156,7 +203,7 @@ export default function Home() {
                 tg?.showConfirm(`تأكيد طلب ${p.title}؟`, async (ok:any) => {
                   if(ok) {
                     const res = await adminDo({action:'purchase_product', telegramId:user.id, price:p.price, productTitle:p.title});
-                    if(res?.success) tg?.showAlert('تم الطلب!');
+                    if(res?.success) tg?.showAlert('تم الطلب بنجاح!');
                   }
                 })
               }}>
@@ -170,37 +217,48 @@ export default function Home() {
           </div>
         )}
 
+        {/* تبويب المهام (الهدية) */}
         {activeTab === 'tasks' && <Page1 onPointsUpdate={handlePointsUpdate} />}
 
+        {/* تبويب السجل */}
         {activeTab === 'history' && (
           <div className="history-list">
-            {tabLoading ? <div style={{textAlign:'center', padding:'20px', color:'#ffa500', fontWeight:'bold'}}>انتظر لحظة...</div> : 
-             history.length === 0 ? <p style={{textAlign:'center', opacity:0.5}}>لا توجد عمليات</p> :
-             history.map((h: any) => (
+            {tabLoading ? (
+                <div style={{textAlign:'center', padding:'20px', color:'#ffa500', fontWeight:'bold'}}>انتظر لحظة...</div>
+            ) : history.length === 0 ? (
+                <p style={{textAlign:'center', opacity:0.5}}>لا توجد عمليات</p>
+            ) : history.map((h: any) => (
               <div key={h.id} className="history-item">
                 <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                   <span className={`status-text status-${h.status || 'pending'}`}>
                     {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
                   </span>
-                  <div><div style={{fontSize:'0.9rem'}}>{h.description}</div><small style={{opacity:0.5}}>{new Date(h.createdAt).toLocaleDateString()}</small></div>
+                  <div>
+                    <div style={{fontSize:'0.9rem'}}>{h.description}</div>
+                    <small style={{opacity:0.5}}>{new Date(h.createdAt).toLocaleTimeString()}</small>
+                  </div>
                 </div>
-                <div style={{fontWeight:'bold'}} className={h.amount > 0 ? 'plus' : 'minus'}>{h.amount > 0 ? `+${h.amount}` : h.amount} XP</div>
+                <div style={{fontWeight:'bold'}} className={h.amount > 0 ? 'plus' : 'minus'}>
+                  {h.amount > 0 ? `+${h.amount}` : h.amount} XP
+                </div>
               </div>
             ))}
           </div>
         )}
 
+        {/* تبويب الإدارة (خاص بالمسؤول فقط) */}
         {activeTab === 'admin' && user?.id === ADMIN_ID && (
           <div className="admin-section">
-            {tabLoading ? <div style={{textAlign:'center', padding:'20px', color:'#ffa500', fontWeight:'bold'}}>انتظر لحظة...</div> : (
+            {tabLoading ? (
+                <div style={{textAlign:'center', padding:'20px', color:'#ffa500', fontWeight:'bold'}}>انتظر لحظة...</div>
+            ) : (
               <>
                 <h4 style={{margin:'10px 0'}}>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
-                {adminData.orders.map((o:any) => (
+                {adminData.orders.length === 0 ? <p style={{opacity:0.5, fontSize:'0.8rem'}}>لا توجد طلبات معلقة حالياً</p> : adminData.orders.map((o:any) => (
                   <div key={o.id} className="admin-card">
                     <div style={{fontSize:'0.85rem', marginBottom:'10px'}}>
                       <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #ffffff10', paddingBottom:'5px', marginBottom:'5px'}}>
-                        {/* هنا يتم العرض من قاعدة البيانات مباشرة */}
-                        <span>👤 <b>{o.user?.firstName || 'بدون اسم'}</b></span>
+                        <span>👤 <b>{o.user?.firstName || 'مستخدم غير معروف'}</b></span>
                         <span style={{color:'#ffa500', fontWeight:'bold'}}>@{o.user?.username || 'no_user'}</span>
                       </div>
                       <div style={{opacity:0.6, fontSize:'0.75rem'}}>🆔 ID: {o.telegramId}</div>
@@ -214,17 +272,23 @@ export default function Home() {
                   </div>
                 ))}
                 
-                <h4 style={{margin:'20px 0 10px 0'}}>👥 قائمة الأعضاء</h4>
+                <h4 style={{margin:'20px 0 10px 0'}}>👥 قائمة الأعضاء (أعلى 100)</h4>
                 <div className="admin-card">
                   {adminData.users.map((u:any) => (
                     <div key={u.id} className="user-row">
-                      <div><b>{u.firstName}</b><br/><small style={{color:'#ffa500'}}>@{u.username || 'unknown'}</small></div>
+                      <div>
+                        <b>{u.firstName}</b>
+                        <br/>
+                        <small style={{color:'#ffa500'}}>@{u.username || 'unknown'}</small>
+                        <br/>
+                        <span style={{fontSize:'0.7rem', opacity:0.6}}>{u.points} XP</span>
+                      </div>
                       <div className="admin-btns">
-                        <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
-                        <button className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('العنوان'); const m=prompt('الرسالة'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
-                        <button className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
+                        <button title="إضافة/خصم نقاط" className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة المراد إضافتها (أو خصمها بوضع -)؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
+                        <button title="إرسال إشعار" className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('عنوان الإشعار'); const m=prompt('محتوى الرسالة'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
+                        <button title="حظر/إلغاء حظر" className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
                           const st = u.status === 1 ? 'unban' : 'ban';
-                          const re = st === 'ban' ? prompt('السبب؟') : "";
+                          const re = st === 'ban' ? prompt('سبب الحظر؟') : "";
                           adminDo({action:'toggle_ban', telegramId:u.telegramId, status: st, reason: re});
                         }}>{u.status === 1 ? '🔓' : '🚫'}</button>
                       </div>
@@ -236,6 +300,8 @@ export default function Home() {
           </div>
         )}
       </div>
+      
+      {/* التوقيع السفلي */}
       <div style={{textAlign:'center', padding:'20px', opacity:0.5, fontSize:'0.7rem'}}>Developed By Borhane</div>
     </div>
   )
