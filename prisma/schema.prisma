@@ -44,7 +44,7 @@ model Notification {
   telegramId  Int      // الـ ID الخاص بالمستخدم المستلم
   title       String   // عنوان الإشعار
   message     String   // نص الرسالة
-  iconUrl     String   @default("https://cdn-icons-png.flaticon.com/512/3119/3119338.png") // أيقونة افتراضية (جرس)
+  iconUrl     String   @default("https://i.postimg.cc/zv3hrNct/1765456939666.jpg") // أيقونة افتراضية (جرس)
   isRead      Boolean  @default(false) // حالة القراءة للنقطة الحمراء
   createdAt   DateTime @default(now())
 }
