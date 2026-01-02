@@ -169,7 +169,6 @@ body {
   transition: var(--transition-fast);
   padding: 8px;
   border-radius: 50%;
-  z-index: 1;
 }
 
 .notif-bell:hover {
@@ -204,81 +203,43 @@ body {
   }
 }
 
-/* خلفية التعتيم */
-.notif-box::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 99998;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* صندوق الإشعارات - Bottom Sheet Style */
+/* صندوق الإشعارات - Bottom Sheet مبسط */
 .notif-box {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--bg-dark);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  border: 1px solid rgba(124, 58, 237, 0.4);
-  border-bottom: none;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9);
-  z-index: 99999;
-  animation: slideUp 0.4s ease;
-  max-height: 75vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  background: #0f172a;
+  border-radius: 20px 20px 0 0;
+  border-top: 2px solid var(--primary);
+  box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.8);
+  z-index: 999999;
+  max-height: 70vh;
+  overflow-y: auto;
+  animation: slideUpSimple 0.3s ease;
 }
 
-@keyframes slideUp {
+@keyframes slideUpSimple {
   from {
     transform: translateY(100%);
-    opacity: 0;
   }
   to {
     transform: translateY(0);
-    opacity: 1;
   }
 }
 
-/* مقبض السحب في الأعلى */
-.notif-box::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  z-index: 1;
-}
-
-/* هيدر صندوق الإشعارات */
+/* هيدر الصندوق */
 .notif-box > div:first-child {
-  padding: 1.5rem 1rem 1rem;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.2));
-  border-bottom: 1px solid var(--border-light);
+  padding: 1.2rem 1rem;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 10;
   backdrop-filter: blur(10px);
-  flex-shrink: 0;
 }
 
 .notif-box > div:first-child b {
@@ -290,52 +251,40 @@ body {
 .notif-box > div:first-child span {
   cursor: pointer;
   padding: 8px;
-  border-radius: 50%;
-  transition: var(--transition-fast);
-  color: var(--text-light);
-  font-size: 1.3rem;
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-fast);
+  color: #ef4444;
+  font-size: 1.2rem;
   background: rgba(239, 68, 68, 0.1);
 }
 
-.notif-box > div:first-child span:hover {
+.notif-box > div:first-child span:active {
   background: rgba(239, 68, 68, 0.3);
-  transform: rotate(90deg);
+  transform: scale(0.9);
 }
 
-/* محتوى الإشعارات - قابل للسكرول */
-.notif-box-scroll {
-  overflow-y: auto;
-  flex: 1;
-  padding: 0.5rem 0;
-}
-
-/* محتوى الإشعارات */
+/* عناصر الإشعارات */
 .notif-item {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 14px 1rem;
-  border-bottom: 1px solid var(--border-lighter);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: var(--transition-fast);
-  cursor: pointer;
 }
 
 .notif-item:last-child {
   border-bottom: none;
-}
-
-.notif-item:hover {
-  background: rgba(124, 58, 237, 0.1);
+  padding-bottom: 2rem;
 }
 
 .notif-item:active {
   background: rgba(124, 58, 237, 0.15);
-  transform: scale(0.98);
 }
 
 .notif-item img {
@@ -365,11 +314,6 @@ body {
   color: var(--text-muted);
   margin: 0;
   line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 /* رسالة فارغة */
