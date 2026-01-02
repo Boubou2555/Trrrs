@@ -1,10 +1,9 @@
 
-/* --- 1. CORE SETTINGS --- */
+/* --- 1. CORE SETTINGS & RESET --- */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 :root {
   --primary: #6c5ce7;
-  --primary-dark: #5649c0;
   --secondary: #a29bfe;
   --dark-bg: #1e272e;
   --darker-bg: #0f172a;
@@ -12,7 +11,7 @@
   --danger: #ff7675;
   --success: #00b894;
   --radius-md: 15px;
-  --border-light: 1px solid rgba(255, 255, 255, 0.1);
+  --glass: rgba(255, 255, 255, 0.05);
 }
 
 * {
@@ -20,30 +19,36 @@
   padding: 0;
   box-sizing: border-box;
   font-family: 'Tajawal', sans-serif;
+  /* Ensure clicking works on all elements */
+  pointer-events: auto; 
 }
 
 body {
   background-color: var(--darker-bg);
   color: var(--light-text);
   direction: rtl;
+  overflow-x: hidden;
 }
 
 .main-container {
-  padding: 1.2rem;
+  padding: 1rem;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* --- 2. HEADER SECTION (Separated Bell & Balance) --- */
+/* --- 2. USER HEADER (Fixed Bell & Username) --- */
 .user-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.2rem;
-  background: rgba(30, 41, 59, 0.7);
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.8);
   border-radius: var(--radius-md);
-  border: var(--border-light);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   margin-bottom: 1.5rem;
+  z-index: 10; /* Keep header accessible */
 }
 
 .header-left {
@@ -60,6 +65,15 @@ body {
   object-fit: cover;
 }
 
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure username is visible and not faint */
+.user-name { font-size: 1rem; font-weight: 700; color: #fff; }
+.user-username { font-size: 0.8rem; color: var(--secondary); opacity: 1; }
+
 .header-right {
   display: flex;
   flex-direction: column;
@@ -72,116 +86,113 @@ body {
   padding: 4px 12px;
   border-radius: 20px;
   font-weight: bold;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
+/* Fixed Bell Button Accessibility */
 .notif-bell {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   cursor: pointer;
   position: relative;
+  z-index: 20; /* High z-index to ensure it stays clickable */
 }
 
-/* --- 3. NOTIFICATION BOX FIX (The Modal Issue) --- */
-/* This ensures the notification box appears as a solid overlay */
+/* --- 3. NOTIFICATION MODAL (Fixed Opening Issue) --- */
 .notif-box {
-  position: fixed; /* Fixed to cover entire screen */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(15, 23, 42, 0.95); /* Darker solid background to hide content behind */
-  z-index: 10000; /* Highest priority */
-  display: none; /* Toggle this via JS (block/none) */
+  background: rgba(10, 15, 28, 0.98); /* Solid background to avoid background bleed */
+  z-index: 9999;
+  display: none; /* Controlled by JS: element.style.display = 'block' */
   padding: 2rem;
-  overflow-y: auto;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Internal content of the notification box */
 .notif-content {
+  width: 100%;
+  max-width: 400px;
   background: #1e293b;
-  border: 2px solid var(--primary);
+  border: 1px solid var(--primary);
   border-radius: var(--radius-md);
   padding: 1.5rem;
-  margin-top: 20%;
   position: relative;
 }
 
-.close-btn {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: var(--danger);
-}
-
-/* --- 4. PRODUCT GRID (3x3 FIX) --- */
+/* --- 4. PRODUCT GRID (3x3 Layout) --- */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Force 3 columns */
-  gap: 10px; /* Space between products */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 2rem;
 }
 
 .product-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass);
   border-radius: 10px;
   overflow: hidden;
-  border: var(--border-light);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
-  padding-bottom: 8px;
 }
 
-.product-image {
-  width: 100%;
-  height: 80px; /* Adjusted for 3x3 layout */
-  object-fit: cover;
-}
+.product-image { width: 100%; height: 80px; object-fit: cover; }
+.p-info h3 { font-size: 0.7rem; padding: 5px; }
 
-.p-info h3 { font-size: 0.7rem; margin: 5px 0; }
-.p-info span { font-size: 0.75rem; color: var(--secondary); font-weight: bold; }
-
-/* --- 5. ADMIN SECTION (Clean Layout) --- */
-.admin-user-row {
-  background: rgba(255,255,255,0.04);
+/* --- 5. HISTORY SECTION (Fixed Style) --- */
+.history-item {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
   padding: 12px;
-  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column; /* Stacked info for better readability */
+  gap: 5px;
   margin-bottom: 10px;
+  border-right: 4px solid var(--primary); /* Visual indicator */
+}
+
+.history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: var(--border-light);
+  width: 100%;
 }
 
-.admin-btns {
-  display: flex;
-  gap: 8px;
+.history-date { font-size: 0.7rem; color: var(--secondary); }
+
+/* --- 6. DEVELOPER & FOOTER (Fixed Visibility) --- */
+.footer {
+  margin-top: auto; /* Pushes footer to bottom */
+  text-align: center;
+  padding: 20px 0;
+  width: 100%;
 }
 
-.admin-btns span {
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-/* --- 6. TABS --- */
-.tabs-container {
-  display: flex;
-  background: rgba(0,0,0,0.2);
-  padding: 5px;
-  border-radius: 10px;
-  margin-bottom: 1.5rem;
-}
-
-.tab-button {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  background: transparent;
-  color: white;
+.dev-name {
   font-size: 0.85rem;
-  cursor: pointer;
-  border-radius: 8px;
+  color: var(--light-text);
+  font-weight: 500;
+  opacity: 0.8;
 }
 
-.tab-button.active {
-  background: var(--primary);
+.dev-name span {
+  color: var(--primary);
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--primary);
 }
+
+/* --- 7. ADMIN SECTION --- */
+.admin-user-row {
+  background: var(--glass);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-btns { display: flex; gap: 10px; }
+.admin-btns span { font-size: 1.2rem; cursor: pointer; }
