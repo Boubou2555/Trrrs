@@ -1,53 +1,45 @@
 
+/* ================================
+   Telegram Mini App UI — Clean Style
+   Developed for Borhane ❤️
+================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
-
+/* Telegram theme variables */
 :root {
-  --primary: #6c5ce7;
-  --primary-dark: #5649c0;
-  --secondary: #a29bfe;
-  --dark: #2d3436;
-  --darker: #1e272e;
-  --light: #f5f6fa;
-  --danger: #ff7675;
-  --success: #00b894;
-  --warning: #f1c40f;
-  --radius-md: 15px;
+  /* fallback colors */
+  --bg: #ffffff;
+  --bg-secondary: #f2f2f7;
+  --text: #222;
+  --text-secondary: #777;
+  --primary: #4a6cf7;
+  --secondary: #9aa1ff;
+  --danger: #ff4d4d;
+  --success: #34c759;
+  --card: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --shadow: rgba(0,0,0,0.07);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  user-select: none;
-  font-family: 'Tajawal', sans-serif;
-}
-
+/* Telegram dynamic theme */
 body {
-  background-color: var(--darker);
-  color: var(--light);
-  direction: rtl;
-  overflow-x: hidden;
+  background: var(--tg-theme-bg-color, var(--bg));
+  color: var(--tg-theme-text-color, var(--text));
+  font-family: "Tajawal", sans-serif;
+  margin: 0;
 }
 
-.main-container {
-  padding: 1rem;
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--darker) 0%, #161d23 100%);
-}
-
-/* --- الهيدر المطور (مع الجرس والرصيد) --- */
+/* ================================
+      HEADER USER BOX
+================================ */
 .user-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: rgba(44, 62, 80, 0.4);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  position: relative;
+  flex-direction: column;
+  padding: 14px;
+  background: var(--tg-theme-bg-color);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .header-left {
@@ -57,196 +49,279 @@ body {
 }
 
 .user-avatar {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  border: 2px solid var(--primary);
-  object-fit: cover;
+  border: 2px solid var(--tg-theme-button-color);
 }
 
-.user-info { display: flex; flex-direction: column; }
-.user-name { font-size: 1rem; font-weight: 700; }
-.user-username { font-size: 0.75rem; opacity: 0.6; }
-
-.header-right {
+.user-info {
   display: flex;
-  align-items: center;
-  gap: 15px;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.user-username {
+  font-size: 13px;
+  opacity: .6;
+}
+
+/* Right Header */
+.header-right {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
 }
 
 .header-balance {
-  background: rgba(108, 92, 231, 0.2);
-  padding: 5px 12px;
-  border-radius: 20px;
-  color: var(--secondary);
-  font-weight: bold;
-  font-size: 0.9rem;
-  border: 1px solid rgba(108, 92, 231, 0.3);
+  background: var(--tg-theme-button-color);
+  padding: 6px 14px;
+  border-radius: 12px;
+  color: var(--tg-theme-button-text-color);
+  font-weight: 600;
+  font-size: 14px;
 }
 
-/* --- نظام الإشعارات --- */
 .notif-bell {
-  position: relative;
-  font-size: 1.4rem;
   cursor: pointer;
-  display: flex;
-  align-items: center;
+  font-size: 20px;
+  position: relative;
 }
 
 .red-dot {
-  position: absolute;
-  top: 0;
-  right: 0;
   width: 10px;
   height: 10px;
   background: var(--danger);
   border-radius: 50%;
-  border: 2px solid var(--darker);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.notif-box {
   position: absolute;
-  top: 80px;
-  left: 0;
-  right: 0;
-  background: #2d3436;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 1rem;
-  z-index: 1000;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  max-height: 350px;
-  overflow-y: auto;
+  top: 0;
+  right: -3px;
+}
+
+/* ================================
+      NOTIFICATION BOX
+================================ */
+.notif-box {
+  margin-top: 12px;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 4px 14px var(--shadow);
+  border: 1px solid var(--border);
+  animation: fadeIn .25s ease;
 }
 
 .notif-item {
   display: flex;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
 }
 
-.notif-item:last-child { border-bottom: none; }
-.notif-item img { width: 30px; height: 30px; object-fit: contain; }
-.notif-item b { font-size: 0.9rem; display: block; margin-bottom: 2px; }
-.notif-item p { font-size: 0.8rem; opacity: 0.7; margin: 0; line-height: 1.4; }
+.notif-item:last-child {
+  border-bottom: none;
+}
 
-/* --- أزرار التبويبات --- */
+.notif-item img {
+  width: 36px;
+  height: 36px;
+}
+
+/* ================================
+      TABS
+================================ */
 .tabs-container {
   display: grid;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 5px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  gap: 5px;
+  gap: 8px;
+  padding: 12px;
 }
 
 .tab-button {
-  padding: 12px 5px;
-  border: none;
-  background: transparent;
-  color: white;
-  font-weight: bold;
-  font-size: 0.85rem;
-  cursor: pointer;
+  padding: 10px;
   border-radius: 10px;
-  transition: all 0.3s ease;
-  text-align: center;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .tab-button.active {
-  background: var(--primary);
-  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.2);
+  background: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
 }
 
-/* --- شبكة المنتجات --- */
+/* ================================
+      PRODUCT CARDS
+================================ */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 12px;
 }
 
 .product-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.2s ease;
-}
-
-.product-card:active { transform: scale(0.97); }
-.product-image { width: 100%; height: 120px; object-fit: cover; }
-.p-info { padding: 10px; text-align: center; }
-.p-info h3 { font-size: 0.85rem; margin-bottom: 5px; }
-.p-info span { color: var(--secondary); font-weight: bold; font-size: 0.9rem; }
-
-/* --- سجل العمليات (History) --- */
-.history-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  background: var(--card);
   padding: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.plus { color: var(--success); font-weight: bold; }
-.minus { color: var(--danger); font-weight: bold; }
-
-/* --- لوحة الإدارة --- */
-.admin-section h4 { margin: 15px 0 10px; color: var(--primary); font-size: 0.9rem; }
-.admin-card, .admin-user-row {
-  background: rgba(255,255,255,0.03);
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid rgba(255,255,255,0.05);
-}
-
-.admin-btns button {
-  padding: 5px 12px;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  margin-right: 5px;
+  border-radius: 15px;
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--border);
   cursor: pointer;
+  transition: 0.15s;
 }
 
-.btn-ok { background: var(--success); }
-.btn-no { background: var(--danger); }
-.btn-blue { background: var(--primary); }
+.product-card:hover {
+  transform: scale(1.02);
+}
 
-/* --- الحظر --- */
-.banned-screen {
+.product-image {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.p-info {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.p-info h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.p-info span {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ================================
+      HISTORY LIST
+================================ */
+.history-list {
+  padding: 12px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  background: var(--card);
+  box-shadow: 0 2px 8px var(--shadow);
+  padding: 10px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+}
+
+.history-left {
+  display: flex;
+  gap: 8px;
+}
+
+.status-icon {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+
+.status-icon.completed {
+  background: rgba(52,197,89,0.15);
+}
+
+.status-icon.pending {
+  background: rgba(255,195,0,0.2);
+}
+
+.status-icon.rejected {
+  background: rgba(255,70,70,0.2);
+}
+
+.history-amount {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.plus { color: var(--success); }
+.minus { color: var(--danger); }
+
+/* ================================
+      ADMIN PANEL
+================================ */
+.admin-section {
+  padding: 12px;
+}
+
+.admin-card {
+  background: var(--card);
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.btn-ok {
+  background: var(--success);
+  padding: 6px 12px;
+  color: white;
+  border-radius: 8px;
+  border: none;
+}
+
+.btn-no {
+  background: var(--danger);
+  padding: 6px 12px;
+  color: white;
+  border-radius: 8px;
+  border: none;
+}
+
+.btn-blue {
+  background: var(--primary);
+  padding: 6px 10px;
+  color: white;
+  border-radius: 8px;
+  border: none;
+}
+
+/* ================================
+      FOOTER
+================================ */
+.footer {
+  margin-top: 30px;
   text-align: center;
-  padding: 100px 20px;
+  padding: 12px;
+  opacity: .7;
 }
 
-/* --- التحميل --- */
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top: 3px solid var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 100px auto;
+/* ================================
+      BANNED SCREEN
+================================ */
+.banned-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  padding: 18px;
 }
 
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-.footer { text-align: center; padding: 20px 0; opacity: 0.4; font-size: 0.75rem; }
-.footer span { color: var(--primary); font-weight: bold; }
-
+/* ================================
+      ANIMATIONS
+================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
