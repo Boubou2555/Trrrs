@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import dynamic from 'next/dynamic' // استيراد المكتبة المطلوبة
+import dynamic from 'next/dynamic'
 import './styles.css'
 
-// تحميل ملف Page1 بطريقة ديناميكية لتجنب أخطاء الرفع على Vercel
 const Page1 = dynamic(() => import('./page1'), { 
   ssr: false, 
   loading: () => <div className="loading-spinner"></div> 
@@ -20,6 +19,12 @@ export default function Home() {
   const [notifs, setNotifs] = useState([])
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [], users: [] })
+  
+  // حالات حقول الإدارة
+  const [targetUser, setTargetUser] = useState('')
+  const [amount, setAmount] = useState('')
+  const [notifTitle, setNotifTitle] = useState('')
+  const [notifMsg, setNotifMsg] = useState('')
 
   const products = [
     { id: 1, title: "حساب جواهر 5000 اندرويد", price: 170, imageUrl: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png" },
@@ -53,17 +58,16 @@ export default function Home() {
 
   useEffect(() => {
     refreshData();
-    if (activeTab === 'admin') {
+    if (activeTab === 'admin' && user?.id === ADMIN_ID) {
       fetch(`/api/increase-points?adminId=${ADMIN_ID}`).then(r => r.json()).then(d => setAdminData({ orders: d.orders, users: d.users }))
     }
-  }, [activeTab, refreshData])
+  }, [activeTab, refreshData, user?.id])
 
   const adminDo = async (p: any) => {
     const res = await fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({ ...p, adminId: ADMIN_ID }) });
     const data = await res.json();
-    if (activeTab === 'admin') {
-      fetch(`/api/increase-points?adminId=${ADMIN_ID}`).then(r => r.json()).then(d => setAdminData({ orders: d.orders, users: d.users }));
-    }
+    // تحديث البيانات بعد أي إجراء
+    fetch(`/api/increase-points?adminId=${ADMIN_ID}`).then(r => r.json()).then(d => setAdminData({ orders: d.orders, users: d.users }))
     return data;
   }
 
@@ -79,13 +83,10 @@ export default function Home() {
       <div className="history-item" style={{marginTop:'20px', justifyContent:'center'}}>
         <b>السبب: {user.reason || "مخالفة القوانين"}</b>
       </div>
-      <p style={{marginTop:'20px', opacity:0.6}}>تواصل مع المسؤول لفك الحظر</p>
     </div>
   )
 
   if (loading) return <div className="loading-spinner"></div>
-
-  const unread = notifs.filter((n: any) => !n.isRead).length;
 
   return (
     <div className="main-container">
@@ -100,24 +101,9 @@ export default function Home() {
         <div className="header-right">
            <div className="header-balance">{user?.points} XP</div>
            <div onClick={() => {setShowNotif(!showNotif); fetch('/api/increase-points', {method:'POST', body:JSON.stringify({action:'read_notifs', telegramId:user.id})})}} className="notif-bell">
-             🔔 {unread > 0 && <span className="red-dot"></span>}
+             🔔 {notifs.filter((n: any) => !n.isRead).length > 0 && <span className="red-dot"></span>}
            </div>
         </div>
-
-        {showNotif && (
-          <div className="notif-box">
-            <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
-              <b>الإشعارات المستلمة</b>
-              <span onClick={() => setShowNotif(false)}>✖</span>
-            </div>
-            {notifs.length === 0 ? <p style={{textAlign:'center', opacity:0.5}}>لا توجد رسائل</p> : notifs.map((n: any) => (
-              <div key={n.id} className="notif-item">
-                <img src={n.iconUrl} alt=""/>
-                <div><b>{n.title}</b><p>{n.message}</p></div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="tabs-container" style={{gridTemplateColumns: user?.id === ADMIN_ID ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)'}}>
@@ -148,7 +134,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* استدعاء Page1 الذي تم تحميله ديناميكياً */}
         {activeTab === 'tasks' && <Page1 onPointsUpdate={handlePointsUpdate} />}
 
         {activeTab === 'history' && (
@@ -157,10 +142,7 @@ export default function Home() {
               <div key={h.id} className="history-item">
                 <div className="history-left">
                    <div className={`status-icon ${h.status}`}>{h.status === 'completed' ? '✅' : h.status === 'pending' ? '⏳' : '❌'}</div>
-                   <div className="history-details">
-                      <p className="history-desc">{h.description}</p>
-                      <small className="history-date">{new Date(h.createdAt).toLocaleDateString()}</small>
-                   </div>
+                   <div className="history-details"><p className="history-desc">{h.description}</p></div>
                 </div>
                 <div className={`history-amount ${h.amount > 0 ? 'plus' : 'minus'}`}>{h.amount > 0 ? `+${h.amount}` : h.amount}</div>
               </div>
@@ -170,17 +152,51 @@ export default function Home() {
 
         {activeTab === 'admin' && (
           <div className="admin-section">
+            <h3>🛠 لوحة التحكم</h3>
+            
+            {/* الطلبات المعلقة */}
             <h4>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
             {adminData.orders.map((o:any) => (
               <div key={o.id} className="admin-card">
-                <div style={{fontSize:'12px'}}>ID:{o.telegramId}<br/>{o.description}</div>
-                <div className="admin-btns" style={{display:'flex'}}>
+                <p>ID: {o.telegramId} | {o.description}</p>
+                <div className="admin-btns">
                    <button className="btn-ok" onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'completed'})}>قبول</button>
                    <button className="btn-no" onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'rejected'})}>رفض</button>
                 </div>
               </div>
             ))}
-            {/* ... باقي قسم الإدارة ... */}
+
+            <hr />
+
+            {/* زيادة النقاط والحظر */}
+            <h4>👤 التحكم بالعضو (ادخل Telegram ID)</h4>
+            <input className="admin-input" placeholder="Telegram ID" value={targetUser} onChange={(e)=>setTargetUser(e.target.value)} />
+            <input className="admin-input" placeholder="المبلغ (مثال: 100 أو -50)" value={amount} onChange={(e)=>setAmount(e.target.value)} />
+            <div className="admin-btns">
+              <button className="btn-ok" onClick={() => adminDo({action:'manage_points', telegramId:targetUser, amount})}>تعديل الرصيد</button>
+              <button className="btn-no" onClick={() => adminDo({action:'toggle_ban', telegramId:targetUser, status:'ban', reason:'مخالفة القوانين'})}>حظر</button>
+            </div>
+
+            <hr />
+
+            {/* إرسال إشعارات */}
+            <h4>🔔 إرسال إشعار للمستخدم</h4>
+            <input className="admin-input" placeholder="العنوان" value={notifTitle} onChange={(e)=>setNotifTitle(e.target.value)} />
+            <textarea className="admin-input" placeholder="الرسالة" value={notifMsg} onChange={(e)=>setNotifMsg(e.target.value)} />
+            <button className="btn-ok" style={{width:'100%'}} onClick={() => adminDo({action:'send_notif', telegramId:targetUser, title:notifTitle, message:notifMsg})}>إرسال الإشعار</button>
+
+            <hr />
+
+            {/* قائمة الأعضاء */}
+            <h4>👥 قائمة أفضل الأعضاء</h4>
+            <div className="users-list">
+              {adminData.users.map((u:any) => (
+                <div key={u.id} className="user-item-admin" onClick={() => setTargetUser(u.telegramId.toString())}>
+                  <span>{u.firstName} (ID: {u.telegramId})</span>
+                  <b>{u.points} XP</b>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
