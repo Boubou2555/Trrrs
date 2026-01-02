@@ -16,7 +16,7 @@ export default function Home() {
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [], users: [] })
 
-  // دالة جلب البيانات وتحديث النقاط فوراً
+  // دالة تحديث البيانات الشاملة لضمان تحديث الرصيد فوراً
   const refreshData = useCallback(async () => {
     if (!user?.id) return;
     try {
@@ -28,7 +28,7 @@ export default function Home() {
       } else {
         setHistory(d.history || []);
         setNotifs(d.notifs || []);
-        // تحديث النقاط في الواجهة فوراً
+        // تحديث الرصيد فوراً في الواجهة
         setUser((prev: any) => prev ? { ...prev, points: d.points ?? prev.points, isBanned: false } : null);
       }
     } catch (e) { console.error(e) }
@@ -46,12 +46,9 @@ export default function Home() {
     } else { setLoading(false); }
   }, [])
 
-  // تحديث تلقائي كل 10 ثوانٍ لضمان بقاء الرصيد محدثاً دائماً بدون رفرش
   useEffect(() => {
     if (user?.id) {
       refreshData();
-      const interval = setInterval(refreshData, 10000); 
-      return () => clearInterval(interval);
     }
   }, [refreshData, user?.id])
 
@@ -67,12 +64,14 @@ export default function Home() {
     } catch (e) { console.error(e) }
   }
 
+  // دالة تنفيذ العمليات مع تحديث فوري للرصيد
   const adminAction = async (payload: any) => {
     const res = await fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) });
     const data = await res.json();
     if (data.success) {
-      await loadAdminData();
-      await refreshData();
+      // استدعاء التحديث فور نجاح العملية لضمان ظهور الرصيد الجديد فورا
+      await refreshData(); 
+      if (user?.id === ADMIN_ID) await loadAdminData();
     }
     return data;
   }
@@ -123,8 +122,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* حل مشكلة الفراغ: نغير عدد الأعمدة بناءً على هوية المستخدم */}
-      <div className="tabs-container" style={{ gridTemplateColumns: user?.id === ADMIN_ID ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)' }}>
+      {/* إخفاء الفراغ تماماً للمستخدم العادي */}
+      <div className="tabs-container" style={{ display: 'grid', gridTemplateColumns: user?.id === ADMIN_ID ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)' }}>
         <button onClick={()=>setActiveTab('products')} className={activeTab==='products'?'tab-button active':'tab-button'}>المنتجات</button>
         <button onClick={()=>setActiveTab('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>الهدية</button>
         <button onClick={()=>setActiveTab('history')} className={activeTab==='history'?'tab-button active':'tab-button'}>السجل</button>
@@ -176,9 +175,54 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === 'admin' && (
+        {activeTab === 'admin' && user?.id === ADMIN_ID && (
           <div className="admin-section">
-             {/* ... كود الإدارة كما هو ... */}
+            <h4 style={{margin:'10px 0'}}>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
+            {adminData.orders.length === 0 ? <p style={{color:'var(--text-muted)', textAlign:'center', padding:'20px'}}>لا توجد طلبات حالياً</p> : adminData.orders.map((o:any) => (
+              <div key={o.id} className="admin-card">
+                <div style={{fontSize:'0.85rem', marginBottom:'8px'}}>
+                  👤 <b>{o.user?.firstName || o.telegramId}</b> <br/>
+                  🛍️ {o.description}
+                </div>
+                <div className="admin-btns">
+                  <button className="btn-mini" style={{background:'var(--success)', flex:1}} onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'completed', telegramId: o.telegramId})}>قبول</button>
+                  <button className="btn-mini" style={{background:'var(--danger)', flex:1}} onClick={() => adminAction({action:'update_order', transactionId:o.id, status:'rejected', telegramId: o.telegramId})}>رفض</button>
+                </div>
+              </div>
+            ))}
+
+            <h4 style={{margin:'20px 0 10px 0'}}>👥 قائمة الأعضاء ({adminData.users.length})</h4>
+            <div className="admin-card">
+              {adminData.users.map((u:any) => (
+                <div key={u.id} className="user-row">
+                  <div>
+                    <b>{u.firstName}</b> 
+                    <span style={{fontSize:'0.7rem', color: u.status === 1 ? 'red' : 'green', marginRight:'5px'}}>
+                      ({u.status === 1 ? 'محظور' : 'نشط'})
+                    </span>
+                    <br/> <small>{u.points} XP</small>
+                  </div>
+                  <div className="admin-btns">
+                    <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {
+                      const val = prompt(`إضافة/خصم نقاط لـ ${u.firstName}:`);
+                      if(val) adminAction({action:'manage_points', telegramId: u.telegramId, amount: val});
+                    }}>💰</button>
+                    <button className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {
+                      const title = prompt("عنوان الإشعار:");
+                      const msg = prompt("نص الرسالة:");
+                      if(title && msg) adminAction({action:'send_notif', telegramId: u.telegramId, title, message: msg});
+                    }}>🔔</button>
+                    <button className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
+                      const status = u.status === 1 ? 'unban' : 'ban';
+                      let reason = status === 'ban' ? (prompt("سبب الحظر؟") || "مخالفة") : "";
+                      if(confirm(u.status === 1 ? "فك الحظر؟" : "حظر المستخدم؟")) {
+                        adminAction({action:'toggle_ban', telegramId: u.telegramId, status, reason});
+                      }
+                    }}>{u.status === 1 ? '🔓' : '🚫'}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
