@@ -65,6 +65,7 @@ export default function Home() {
     try {
       const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
       const data = await res.json();
+      // تأكد أن الـ API يعيد حقل user داخل كل order
       setAdminData({ orders: data.orders || [], users: data.users || [] });
     } catch (e) { console.error(e) } finally { setTabLoading(false); }
   }
@@ -192,10 +193,10 @@ export default function Home() {
                 <h4 style={{margin:'10px 0'}}>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
                 {adminData.orders.map((o:any) => (
                   <div key={o.id} className="admin-card">
-                    {/* تحديث عرض البيانات: الاسم واليوزر بلون مميز */}
                     <div style={{fontSize:'0.85rem', marginBottom:'10px'}}>
                       <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #ffffff10', paddingBottom:'5px', marginBottom:'5px'}}>
-                        <span>👤 <b>{o.user?.firstName || 'بدون اسم'}</b></span>
+                        {/* جلب الاسم واليوزر من بيانات المستخدم المرتبطة بالطلب في قاعدة البيانات */}
+                        <span>👤 <b>{o.user?.firstName || 'جاري التحميل...'}</b></span>
                         <span style={{color:'#ffa500', fontWeight:'bold'}}>@{o.user?.username || 'no_user'}</span>
                       </div>
                       <div style={{opacity:0.6, fontSize:'0.75rem'}}>🆔 ID: {o.telegramId}</div>
@@ -213,6 +214,7 @@ export default function Home() {
                 <div className="admin-card">
                   {adminData.users.map((u:any) => (
                     <div key={u.id} className="user-row">
+                      {/* جلب الاسم واليوزر مباشرة من حقول جدول المستخدمين في MongoDB */}
                       <div><b>{u.firstName}</b><br/><small style={{color:'#ffa500'}}>@{u.username || 'unknown'}</small></div>
                       <div className="admin-btns">
                         <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
