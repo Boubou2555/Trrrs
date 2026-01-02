@@ -11,17 +11,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ar" dir="rtl">
       <head>
-        {/* 1. سكريبت التليجرام الأساسي */}
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        {/* سكريبت التليجرام الأساسي لضمان عمل التطبيق داخل Telegram */}
+        <Script 
+          src="https://telegram.org/js/telegram-web-app.js" 
+          strategy="beforeInteractive" 
+        />
         
-        {/* 2. سكريبت AdsGram الرسمي (لأول 5 إعلانات) */}
+        {/* سكريبت AdsGram الرسمي (حسب الصورة المرفقة من التوثيق) */}
+        {/* ملاحظة: هذا السكريبت ضروري لتشغيل وحدة AdController في Page1 */}
         <Script 
           src="https://adsgram.ai/js/adman.js" 
-          strategy="lazyOnload" 
+          strategy="afterInteractive" 
         />
 
-        {/* 3. سكريبت Monetag (للـ 5 إعلانات المتبقية) */}
-        {/* ملاحظة: قمت بالإبقاء على المعرف الخاص بك 10400479 كما في الكود السابق */}
+        {/* سكريبت Monetag (المنطقة الإعلانية 10400479) */}
+        {/* يتم تحميله بشكل متوازٍ ليعمل عند وصول عداد الإعلانات إلى 5 */}
         <Script 
           src="//libtl.com/sdk.js" 
           data-zone="10400479" 
@@ -29,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="lazyOnload"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+      </body>
     </html>
   )
 }
