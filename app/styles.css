@@ -1,23 +1,22 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 :root {
   --primary: #6c5ce7;
-  --primary-dark: #5649c0;
   --secondary: #a29bfe;
   --darker: #0f172a;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --light: #f5f6fa;
+  --bg-card: rgba(30, 41, 59, 0.8);
+  --light: #f8fafc;
   --danger: #ff7675;
   --success: #00b894;
   --radius-md: 15px;
-  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  user-select: none;
   font-family: 'Tajawal', sans-serif;
 }
 
@@ -25,23 +24,24 @@ body {
   background-color: var(--darker);
   color: var(--light);
   direction: rtl;
+  min-height: 100vh;
 }
 
 .main-container {
   padding: 1rem;
-  min-height: 100vh;
-  background: radial-gradient(circle at top, #1e293b 0%, var(--darker) 100%);
+  max-width: 500px; /* العرض المثالي لتطبيقات الهاتف */
+  margin: 0 auto;
 }
 
-/* --- الهيدر المطور (إصلاح الجرس والرصيد) --- */
+/* --- 1. إصلاح الهيدر (الجرس والرصيد) --- */
 .user-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem;
+  padding: 1.2rem;
   background: var(--bg-card);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: var(--glass-border);
   backdrop-filter: blur(10px);
   margin-bottom: 1.5rem;
 }
@@ -62,64 +62,35 @@ body {
 
 .header-right {
   display: flex;
-  flex-direction: column; /* جعل الرصيد والجرس فوق بعض */
-  align-items: flex-end; /* محاذاة لليمين */
+  flex-direction: column; /* ترتيب عمودي لمنع التداخل */
+  align-items: flex-end;
   gap: 8px;
 }
 
 .header-balance {
   background: var(--primary);
-  padding: 5px 15px;
-  border-radius: 20px;
-  color: white;
+  padding: 4px 12px;
+  border-radius: 50px;
   font-weight: bold;
-  font-size: 0.85rem;
-  box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .notif-bell {
   font-size: 1.5rem;
   cursor: pointer;
   position: relative;
-  display: inline-block;
+  line-height: 1;
 }
 
-/* --- نافذة الإشعارات (إصلاح تداخل الصورة 2) --- */
-.notif-box {
-  position: fixed; /* تغيير من absolute لضمان عدم التداخل مع الهيدر */
-  top: 10%;
-  left: 5%;
-  right: 5%;
-  bottom: 10%;
-  background: #1e293b;
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  z-index: 9999;
-  overflow-y: auto;
-  border: 1px solid var(--primary);
-}
-
-/* --- قسم الإدارة (إصلاح الصورة 1) --- */
-.admin-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.admin-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 15px 0;
-  font-weight: bold;
-}
-
+/* --- 2. إصلاح قسم الإدارة (البطاقات المنظمة) --- */
 .admin-user-row {
-  background: var(--glass);
-  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 12px;
+  padding: 12px 15px;
   border-radius: var(--radius-md);
   display: flex;
-  justify-content: space-between; /* فصل الاسم عن الأزرار */
+  justify-content: space-between; /* دفع الاسم لليمين والأزرار لليسار */
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -127,61 +98,112 @@ body {
 .user-main-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
-.admin-username { font-size: 0.9rem; font-weight: bold; }
-.admin-balance-text { font-size: 0.75rem; color: var(--secondary); }
+.admin-username {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.admin-balance-text {
+  font-size: 0.75rem;
+  color: var(--secondary);
+}
 
 .admin-btns {
   display: flex;
-  gap: 12px; /* مسافة بين أيقونات الإدارة */
+  gap: 10px; /* مسافة بين أيقونات التحكم */
+  align-items: center;
 }
 
-.admin-btns span, .admin-btns i {
-  font-size: 1.2rem;
+.admin-btns span {
+  font-size: 1.3rem; /* تكبير الايموجي ليسهل الضغط */
   cursor: pointer;
   transition: 0.2s;
+  display: flex;
+  align-items: center;
 }
 
-.admin-btns span:active { transform: scale(1.3); }
+.admin-btns span:active { transform: scale(1.2); }
 
-/* --- التبويبات --- */
+/* --- 3. إصلاح نافذة الإشعارات (تظهر فوق كل شيء) --- */
+.notif-box {
+  position: fixed; /* لتغطية الشاشة بالكامل */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-height: 80vh;
+  background: #1e293b;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--primary);
+  z-index: 10000; /* قيمة عالية جداً لضمان ظهورها فوق الهيدر */
+  padding: 1.5rem;
+  box-shadow: 0 0 30px rgba(0,0,0,0.8);
+  overflow-y: auto;
+}
+
+.close-notif {
+  cursor: pointer;
+  float: left;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+/* --- 4. التبويبات (Tabs) --- */
 .tabs-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  background: rgba(0,0,0,0.2);
+  display: flex;
+  background: rgba(0,0,0,0.3);
   padding: 5px;
   border-radius: 12px;
   margin-bottom: 20px;
+  gap: 5px;
 }
 
 .tab-button {
-  padding: 10px 5px;
+  flex: 1;
+  padding: 12px 5px;
   border: none;
   background: transparent;
-  color: white;
-  font-size: 0.8rem;
-  border-radius: 10px;
+  color: rgba(255,255,255,0.6);
+  font-weight: bold;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
 .tab-button.active {
   background: var(--primary);
+  color: #fff;
 }
 
-/* --- الرسوم المتحركة --- */
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
+/* --- شبكة المنتجات --- */
+.products-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* عرض منتج واحد لكل سطر مثل الفيديو */
+  gap: 15px;
 }
-.red-dot {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 10px;
-  height: 10px;
-  background: var(--danger);
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
+
+.product-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: var(--glass-border);
+}
+
+.product-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.p-info {
+  padding: 10px;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
