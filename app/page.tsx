@@ -193,7 +193,7 @@ export default function Home() {
         {activeTab === 'products' && (
           <div className="products-grid">
             {[
-              { id: 1, title: "جواهر 5000 اندرويد", price: 170, img: "https://i.postimg.cc/4d0Vdzhy/New-Project-40-C022-BBD.png" },
+              { id: 1, title: "130 Coins Pes", price: 9999, img: "https://c2c.fp3.guinfra.com/file/6930febd0edd36f87c3190adEFDdxa6w03?fop=imageView/2/w/340/h/340" },
               { id: 2, title: "جواهر 5000 ايفون", price: 170, img: "https://i.postimg.cc/k51fQRb3/New-Project-40-321-E54-A.png" },
               { id: 4, title: "تحويل فليكسي", price: 50, img: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png" }
             ].map(p => (
