@@ -1,15 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
-/* ==========================================
-   المتغيرات العامة (نفس ألوان تصميمك)
-   ========================================== */
 :root {
   --primary: #7c3aed;
-  --primary-dark: #6d28d9;
   --primary-light: #a78bfa;
-  --secondary: #06b6d4;
   --bg-darker: #0f172a;
-  --bg-dark: #1e293b;
   --bg-card: rgba(255, 255, 255, 0.06);
   --text-light: #f1f5f9;
   --text-muted: rgba(241, 245, 249, 0.6);
@@ -18,26 +12,15 @@
   --warning: #f59e0b;
   --radius-md: 12px;
   --radius-lg: 15px;
-  --radius-xl: 20px;
-  --transition: 0.3s ease;
 }
 
-/* ==========================================
-   إعدادات عامة
-   ========================================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   font-family: 'Tajawal', sans-serif;
   background-color: var(--bg-darker);
   color: var(--text-light);
   direction: rtl;
-  line-height: 1.6;
 }
 
 .main-container {
@@ -47,196 +30,60 @@ body {
   padding-bottom: 80px;
 }
 
-/* ==========================================
-   الهيدر (Header)
-   ========================================== */
+/* الهيدر */
 .user-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem; background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
+  border-radius: var(--radius-lg); border: 1px solid rgba(124, 58, 237, 0.3); backdrop-filter: blur(20px);
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(124, 58, 237, 0.3);
-  backdrop-filter: blur(20px);
 }
 
-.user-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px solid var(--primary);
-  object-fit: cover;
-}
+.user-avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
 
-.header-balance {
-  background: rgba(124, 58, 237, 0.25);
-  padding: 6px 14px;
-  border-radius: var(--radius-xl);
-  color: #a78bfa;
-  font-weight: 700;
-  border: 1px solid rgba(124, 58, 237, 0.4);
-}
-
-/* ==========================================
-   نظام الإشعارات (مع صورة المنتج)
-   ========================================== */
+/* الإشعارات */
 .notif-box {
-  position: fixed;
-  top: 190px;
-  left: 1rem;
-  right: 1rem;
-  background: #0f172a;
-  border-radius: 20px;
-  border: 2px solid var(--primary);
-  z-index: 9999;
-  max-height: calc(100vh - 210px);
-  overflow-y: auto;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9);
-}
-
-.notif-header {
-  padding: 1.2rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.notif-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: fixed; top: 190px; left: 1rem; right: 1rem; background: #0f172a;
+  border-radius: 20px; border: 2px solid var(--primary); z-index: 9999;
+  max-height: calc(100vh - 210px); overflow-y: auto; box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9);
 }
 
 .notif-img {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  object-fit: cover;
-  border: 1px solid var(--primary);
-  background: var(--bg-dark);
+  width: 45px; height: 45px; border-radius: 50%; /* إطار دائري كما طلبت */
+  object-fit: cover; border: 1px solid var(--primary); flex-shrink: 0;
 }
 
-.notif-details b { font-size: 0.95rem; color: var(--text-light); }
-.notif-details p { font-size: 0.85rem; color: var(--text-muted); }
+/* نصوص الحالات الملونة في السجل */
+.status-text {
+  font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+}
+.status-completed { color: var(--success); background: rgba(16, 185, 129, 0.1); }
+.status-rejected { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+.status-pending { color: var(--warning); background: rgba(245, 158, 11, 0.1); }
 
-/* ==========================================
-   التبويبات (Tabs)
-   ========================================== */
-.tabs-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  background: var(--bg-card);
-  padding: 6px;
-  border-radius: var(--radius-md);
-  margin-bottom: 1.5rem;
-  gap: 5px;
+/* التبويبات */
+.tabs-container { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--bg-card); padding: 5px; border-radius: var(--radius-md); gap: 5px; margin-bottom: 1.5rem; }
+.tab-button { padding: 12px 2px; border: none; background: transparent; color: white; font-size: 0.85rem; border-radius: 8px; cursor: pointer; }
+.tab-button.active { background: var(--primary); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); }
+
+/* لوحة الإدارة والطلبات */
+.admin-card {
+  background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px;
 }
 
-.tab-button {
-  padding: 12px 2px;
-  border: none;
-  background: transparent;
-  color: var(--text-light);
-  font-weight: 600;
-  font-size: 0.85rem;
-  border-radius: var(--radius-sm);
+.admin-order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.admin-username { color: var(--primary-light); font-weight: bold; font-size: 0.9rem; display: block; }
+
+.admin-btns { display: flex; gap: 10px; margin-top: 10px; }
+.btn-action {
+  flex: 1; padding: 10px; border: none; border-radius: 8px;
+  color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem;
 }
+.btn-accept { background-color: var(--success); }
+.btn-reject { background-color: var(--danger); }
 
-.tab-button.active {
-  background: var(--primary);
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-}
-
-/* ==========================================
-   سجل العمليات (History) - مع أيقونات الحالة
-   ========================================== */
-.history-list { display: flex; flex-direction: column; gap: 10px; }
-
-.history-item {
-  background: var(--bg-card);
-  padding: 15px;
-  border-radius: var(--radius-md);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.history-left { display: flex; align-items: center; gap: 12px; }
-
-.status-icon {
-  font-size: 1.4rem;
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.03);
-  border-radius: 50%;
-}
-
-.history-desc { font-size: 0.9rem; font-weight: 600; }
-.history-date { font-size: 0.75rem; color: var(--text-muted); }
-
-.history-amount.plus { color: var(--success); font-weight: bold; }
-.history-amount.minus { color: var(--danger); font-weight: bold; }
-
-/* ==========================================
-   المنتجات
-   ========================================== */
+/* المنتجات */
 .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-
-.product-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.product-image { width: 100%; height: 130px; object-fit: cover; }
-.p-info { padding: 12px; text-align: center; background: rgba(0, 0, 0, 0.2); }
-
-/* ==========================================
-   لوحة الإدارة (Admin Panel)
-   ========================================== */
-.admin-card, .admin-user-row {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 14px;
-  border-radius: var(--radius-md);
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.admin-btns { display: flex; gap: 8px; }
-
-.admin-btns button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.btn-ok { background: var(--success); }
-.btn-no { background: var(--danger); }
-.btn-blue { background: var(--primary); }
-
-/* الفوتر والتحميل */
-.loading-spinner {
-  width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.1);
-  border-top: 4px solid var(--primary); border-radius: 50%;
-  animation: spin 0.8s linear infinite; margin: 100px auto;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.footer { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.8rem; }
-.footer span { color: var(--primary); font-weight: bold; }
+.product-card { background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); }
+.product-image { width: 100%; height: 120px; object-fit: cover; }
+.p-info { padding: 10px; text-align: center; background: rgba(0, 0, 0, 0.2); }
