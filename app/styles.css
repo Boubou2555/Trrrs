@@ -1,45 +1,45 @@
 
-/* ================================
-   Telegram Mini App UI — Clean Style
-   Developed for Borhane ❤️
-================================ */
+/* =========================================================
+     Telegram Mini App Premium UI – Full Professional
+     Optimized for Borhane App ❤️
+========================================================= */
 
-/* Telegram theme variables */
+/* Telegram Theme Fallbacks */
 :root {
-  /* fallback colors */
   --bg: #ffffff;
-  --bg-secondary: #f2f2f7;
-  --text: #222;
-  --text-secondary: #777;
-  --primary: #4a6cf7;
-  --secondary: #9aa1ff;
+  --bg2: #f4f5f7;
+  --text: #111;
+  --text-light: #666;
+  --primary: #5b86ff;
+  --primary-soft: #e8ecff;
   --danger: #ff4d4d;
   --success: #34c759;
   --card: #ffffff;
-  --border: rgba(0,0,0,0.08);
-  --shadow: rgba(0,0,0,0.07);
+  --border: rgba(0,0,0,0.10);
+  --shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
-/* Telegram dynamic theme */
+/* Auto Telegram Theming */
 body {
+  font-family: "Tajawal", sans-serif;
   background: var(--tg-theme-bg-color, var(--bg));
   color: var(--tg-theme-text-color, var(--text));
-  font-family: "Tajawal", sans-serif;
+  padding: 0;
   margin: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* ================================
-      HEADER USER BOX
-================================ */
+/* =========================================================
+     HEADER
+========================================================= */
 .user-header {
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  background: var(--tg-theme-bg-color);
+  padding: 16px;
+  background: var(--tg-theme-bg-color, var(--bg));
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 10;
+  backdrop-filter: blur(10px);
 }
 
 .header-left {
@@ -49,77 +49,71 @@ body {
 }
 
 .user-avatar {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  border: 2px solid var(--tg-theme-button-color);
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
+  width: 55px;
+  height: 55px;
+  border-radius: 16px;
+  border: 2px solid var(--tg-theme-button-color, var(--primary));
 }
 
 .user-name {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .user-username {
   font-size: 13px;
-  opacity: .6;
+  opacity: 0.6;
 }
 
-/* Right Header */
 .header-right {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   justify-content: space-between;
-  padding: 0 4px;
+  align-items: center;
 }
 
 .header-balance {
-  background: var(--tg-theme-button-color);
-  padding: 6px 14px;
+  background: var(--tg-theme-button-color, var(--primary));
+  padding: 7px 18px;
   border-radius: 12px;
-  color: var(--tg-theme-button-text-color);
-  font-weight: 600;
+  color: var(--tg-theme-button-text-color, #fff);
+  font-weight: 700;
   font-size: 14px;
 }
 
 .notif-bell {
+  font-size: 22px;
   cursor: pointer;
-  font-size: 20px;
   position: relative;
 }
 
 .red-dot {
+  position: absolute;
   width: 10px;
   height: 10px;
+  top: -2px;
+  right: 0;
   background: var(--danger);
   border-radius: 50%;
-  position: absolute;
-  top: 0;
-  right: -3px;
 }
 
-/* ================================
-      NOTIFICATION BOX
-================================ */
+/* =========================================================
+     NOTIFICATION BOX
+========================================================= */
 .notif-box {
-  margin-top: 12px;
+  margin-top: 15px;
   background: var(--card);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: 0 4px 14px var(--shadow);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow);
   border: 1px solid var(--border);
-  animation: fadeIn .25s ease;
+  animation: fade 0.25s ease;
 }
 
 .notif-item {
   display: flex;
-  gap: 10px;
-  padding: 10px;
+  gap: 12px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -128,13 +122,14 @@ body {
 }
 
 .notif-item img {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
 }
 
-/* ================================
-      TABS
-================================ */
+/* =========================================================
+     TABS
+========================================================= */
 .tabs-container {
   display: grid;
   gap: 8px;
@@ -142,47 +137,49 @@ body {
 }
 
 .tab-button {
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  background: var(--bg-secondary);
-  color: var(--text);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 11px;
+  border-radius: 12px;
+  font-weight: 600;
   font-size: 15px;
-  font-weight: 500;
+  color: var(--text);
 }
 
 .tab-button.active {
-  background: var(--tg-theme-button-color);
-  color: var(--tg-theme-button-text-color);
+  background: var(--tg-theme-button-color, var(--primary));
+  color: var(--tg-theme-button-text-color, #fff);
+  border-color: transparent;
+  transform: scale(1.02);
 }
 
-/* ================================
-      PRODUCT CARDS
-================================ */
+/* =========================================================
+     PRODUCT CARDS
+========================================================= */
 .products-grid {
   display: grid;
-  gap: 12px;
   grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
   padding: 12px;
 }
 
 .product-card {
   background: var(--card);
   padding: 12px;
-  border-radius: 15px;
-  box-shadow: 0 2px 8px var(--shadow);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
   border: 1px solid var(--border);
   cursor: pointer;
   transition: 0.15s;
 }
 
 .product-card:hover {
-  transform: scale(1.02);
+  transform: translateY(-3px);
 }
 
 .product-image {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 .p-info {
@@ -192,8 +189,8 @@ body {
 }
 
 .p-info h3 {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
 }
 
 .p-info span {
@@ -201,127 +198,115 @@ body {
   font-weight: 700;
 }
 
-/* ================================
-      HISTORY LIST
-================================ */
+/* =========================================================
+     HISTORY
+========================================================= */
 .history-list {
-  padding: 12px;
+  padding: 14px;
 }
 
 .history-item {
+  background: var(--card);
+  padding: 12px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
   display: flex;
   justify-content: space-between;
-  background: var(--card);
-  box-shadow: 0 2px 8px var(--shadow);
-  padding: 10px;
-  border-radius: 12px;
-  margin-bottom: 10px;
   border: 1px solid var(--border);
 }
 
-.history-left {
-  display: flex;
-  gap: 8px;
-}
-
 .status-icon {
-  padding: 6px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 15px;
 }
 
 .status-icon.completed {
-  background: rgba(52,197,89,0.15);
+  background: rgba(52,197,89,0.20);
 }
 
 .status-icon.pending {
-  background: rgba(255,195,0,0.2);
+  background: rgba(255,195,0,0.25);
 }
 
 .status-icon.rejected {
-  background: rgba(255,70,70,0.2);
+  background: rgba(255,70,70,0.25);
+}
+
+.history-desc {
+  font-size: 14px;
+}
+
+.history-date {
+  opacity: 0.5;
+  font-size: 12px;
 }
 
 .history-amount {
-  font-weight: 800;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 900;
 }
 
 .plus { color: var(--success); }
 .minus { color: var(--danger); }
 
-/* ================================
-      ADMIN PANEL
-================================ */
+/* =========================================================
+     ADMIN PANEL
+========================================================= */
 .admin-section {
-  padding: 12px;
+  padding: 14px;
 }
 
-.admin-card {
-  background: var(--card);
+.admin-card, .admin-user-row {
   padding: 12px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px var(--shadow);
+  background: var(--card);
+  border-radius: 14px;
+  margin-bottom: 10px;
   border: 1px solid var(--border);
+  box-shadow: var(--shadow);
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
 }
 
-.btn-ok {
-  background: var(--success);
-  padding: 6px 12px;
+.btn-ok, .btn-no, .btn-blue {
+  padding: 8px 14px;
+  border-radius: 10px;
   color: white;
-  border-radius: 8px;
   border: none;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.btn-no {
-  background: var(--danger);
-  padding: 6px 12px;
-  color: white;
-  border-radius: 8px;
-  border: none;
-}
+.btn-ok { background: var(--success); }
+.btn-no { background: var(--danger); }
+.btn-blue { background: var(--primary); }
 
-.btn-blue {
-  background: var(--primary);
-  padding: 6px 10px;
-  color: white;
-  border-radius: 8px;
-  border: none;
-}
-
-/* ================================
-      FOOTER
-================================ */
+/* =========================================================
+     FOOTER
+========================================================= */
 .footer {
-  margin-top: 30px;
   text-align: center;
-  padding: 12px;
-  opacity: .7;
+  padding: 20px;
+  opacity: .5;
 }
 
-/* ================================
-      BANNED SCREEN
-================================ */
+/* =========================================================
+     BANNED SCREEN
+========================================================= */
 .banned-screen {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   height: 100vh;
+  display: grid;
+  place-items: center;
   text-align: center;
-  padding: 18px;
 }
 
-/* ================================
-      ANIMATIONS
-================================ */
-@keyframes fadeIn {
+/* =========================================================
+     ANIMATIONS
+========================================================= */
+@keyframes fade {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
