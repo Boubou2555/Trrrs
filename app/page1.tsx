@@ -26,15 +26,32 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
       const adsgram = (window as any).Adsgram;
       if (adsgram) {
         setNotification('📺 جاري تحميل الإعلان...');
-        const AdController = adsgram.init({ blockId: "20420" }); // الـ ID الجديد
-        AdController.show().then(() => processReward()).catch(() => { setIsLoading(false); setNotification('❌ فشل العرض'); });
+        // استخدام المعرف الجديد 20420
+        const AdController = adsgram.init({ blockId: "20420" }); 
+        
+        AdController.show()
+          .then((result: any) => {
+            if (result.done) { // التأكد من اكتمال المشاهدة
+              setNotification('✅ تمت المشاهدة بنجاح!');
+              processReward();
+            } else {
+              setIsLoading(false);
+              setNotification('⚠️ لم تكتمل المشاهدة');
+            }
+          })
+          .catch((err: any) => { 
+            setIsLoading(false); 
+            setNotification(`❌ خطأ: ${err.description || 'فشل العرض'}`); 
+          });
       } else {
         setNotification('⏳ جاري التحميل...');
         setTimeout(() => { setIsLoading(false); handleWatchAd(); }, 2000);
       }
     } else {
       if (typeof (window as any).show_10400479 === 'function') {
-        (window as any).show_10400479().then(() => processReward()).catch(() => setIsLoading(false));
+        (window as any).show_10400479()
+          .then(() => processReward())
+          .catch(() => setIsLoading(false));
       }
     }
   };
@@ -49,14 +66,13 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
       if (data.success) {
         setAdsCount(data.newAdsCount);
         onPointsUpdate(data.newPoints);
-        setNotification('🎉 +1 XP!');
       }
     } finally { setIsLoading(false); }
   };
 
   return (
     <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-      <p style={{marginBottom: '10px'}}>إعلانات اليوم: {adsCount} / {MAX_ADS}</p>
+      <p style={{marginBottom: '10px'}}>المهام اليومية: {adsCount} / {MAX_ADS}</p>
       <div style={{width:'100%', height:'8px', background:'#333', borderRadius:'4px', marginBottom:'20px', overflow:'hidden'}}>
         <div style={{width:`${(adsCount/MAX_ADS)*100}%`, height:'100%', background:'var(--primary)'}}></div>
       </div>
