@@ -67,6 +67,7 @@ export async function GET(req: Request) {
     const userId = parseInt(searchParams.get('telegramId') || "0");
     const action = searchParams.get('action');
 
+    // دالة مشاهدة الإعلان
     if (action === 'watch_ad' && userId > 0) {
         const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
         if (checkUser && checkUser.adsCount < MAX_ADS) {
@@ -76,8 +77,14 @@ export async function GET(req: Request) {
     }
 
     const adminId = parseInt(searchParams.get('adminId') || "0");
+    
+    // التعديل هنا لربط بيانات المستخدم بالطلبات
     if (adminId === ADMIN_ID) {
-        const orders = await prisma.transaction.findMany({ where: { status: 'pending' }, orderBy: { createdAt: 'desc' } });
+        const orders = await prisma.transaction.findMany({ 
+            where: { status: 'pending' }, 
+            orderBy: { createdAt: 'desc' },
+            include: { user: true } // هذا السطر هو الذي يجلب الاسم واليوزر من جدول المستخدمين
+        });
         const users = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
         return NextResponse.json({ success: true, orders, users });
     }
@@ -85,5 +92,12 @@ export async function GET(req: Request) {
     const userData = await prisma.user.findUnique({ where: { telegramId: userId } });
     const history = await prisma.transaction.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 20 });
     const notifs = await prisma.notification.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 15 });
-    return NextResponse.json({ success: true, user: userData, history, notifs });
+    
+    return NextResponse.json({ 
+        success: true, 
+        points: userData?.points || 0, // إضافة لإرسال النقاط مباشرة
+        user: userData, 
+        history, 
+        notifs 
+    });
 }
