@@ -15,24 +15,29 @@ export default function Home() {
   const [notifs, setNotifs] = useState<any[]>([]) 
   const [showNotif, setShowNotif] = useState(false)
   const [adminData, setAdminData] = useState({ orders: [], users: [] })
+  
+  // حالة جديدة لمراقبة تحميل البيانات داخل التبويبات
+  const [tabLoading, setTabLoading] = useState(false)
 
   const isFetching = useRef(false);
 
-  // تحديث البيانات في الخلفية (للنقطة الحمراء والسجل)
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (isInitial = false) => {
     if (!user?.id || user.isBanned || isFetching.current) return;
+    if (isInitial) setTabLoading(true); // تشغيل الانتظار عند الطلب اليدوي
+    
     isFetching.current = true;
     try {
       const res = await fetch(`/api/increase-points?telegramId=${user.id}`);
       const d = await res.json();
       setHistory(d.history || []);
       setNotifs(d.notifs || []);
-      // تحديث صامت للرصيد إذا تغير في قاعدة البيانات
       setUser((prev: any) => prev ? { ...prev, points: d.points ?? prev.points } : null);
-    } catch (e) { console.error(e) } finally { isFetching.current = false; }
+    } catch (e) { console.error(e) } finally { 
+      isFetching.current = false;
+      setTabLoading(false); 
+    }
   }, [user?.id, user?.isBanned]);
 
-  // نظام التحديث التلقائي كل 4 ثوانٍ (لإظهار النقطة الحمراء مباشرة)
   useEffect(() => {
     if (user?.id && !user.isBanned) {
       const interval = setInterval(refreshData, 4000);
@@ -40,7 +45,6 @@ export default function Home() {
     }
   }, [user?.id, user?.isBanned, refreshData]);
 
-  // تسجيل الدخول الأول
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user) {
@@ -54,25 +58,24 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
+    if (activeTab === 'history') refreshData(true);
     if (activeTab === 'admin' && user?.id === ADMIN_ID) loadAdminData();
-  }, [activeTab, user?.id])
+  }, [activeTab, user?.id, refreshData])
 
   const loadAdminData = async () => {
+    setTabLoading(true);
     try {
       const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
       const data = await res.json();
       setAdminData({ orders: data.orders || [], users: data.users || [] });
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e) } finally { setTabLoading(false); }
   }
 
-  // دالة الأكشن مع تحديث الرصيد الفوري (نفس طريقتك الأصلية)
   const adminDo = async (payload: any) => {
     try {
       const res = await fetch('/api/increase-points', { method: 'POST', body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) });
       const data = await res.json();
-      
       if (data.success) {
-        // تحديث الرصيد فوراً في الواجهة كما في كودك
         if (data.newPoints !== undefined) {
           setUser((prev: any) => ({ ...prev, points: data.newPoints }));
         }
@@ -168,11 +171,14 @@ export default function Home() {
 
         {activeTab === 'history' && (
           <div className="history-list">
-            {history.map((h: any) => (
+            {/* رسالة الانتظار باللون البرتقالي */}
+            {tabLoading ? <div style={{textAlign:'center', padding:'20px', color:'#ffa500', fontWeight:'bold'}}>انتظر لحظة...</div> : 
+             history.length === 0 ? <p style={{textAlign:'center', opacity:0.5}}>لا توجد عمليات</p> :
+             history.map((h: any) => (
               <div key={h.id} className="history-item">
                 <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                   <span className={`status-text status-${h.status || 'pending'}`}>
-                    {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
+                    {h.status === 'completed' ? 'مكتمل' : h.status === 'rejected' ? 'مرفوض' : ' المراجعة'}
                   </span>
                   <div><div style={{fontSize:'0.9rem'}}>{h.description}</div><small style={{opacity:0.5}}>{new Date(h.createdAt).toLocaleDateString()}</small></div>
                 </div>
@@ -184,33 +190,37 @@ export default function Home() {
 
         {activeTab === 'admin' && user?.id === ADMIN_ID && (
           <div className="admin-section">
-            <h4 style={{margin:'10px 0'}}>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
-            {adminData.orders.map((o:any) => (
-              <div key={o.id} className="admin-card">
-                <div style={{fontSize:'0.85rem', marginBottom:'8px'}}>👤 <b>{o.user?.firstName || o.telegramId}</b> <br/>🛍️ {o.description}</div>
-                <div className="admin-btns">
-                  <button className="btn-mini" style={{background:'var(--success)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'completed', telegramId: o.telegramId})}>قبول</button>
-                  <button className="btn-mini" style={{background:'var(--danger)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'rejected', telegramId: o.telegramId})}>رفض</button>
-                </div>
-              </div>
-            ))}
-            <h4 style={{margin:'20px 0 10px 0'}}>👥 قائمة الأعضاء</h4>
-            <div className="admin-card">
-              {adminData.users.map((u:any) => (
-                <div key={u.id} className="user-row">
-                  <div><b>{u.firstName}</b><br/><small>{u.points} XP</small></div>
-                  <div className="admin-btns">
-                    <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
-                    <button className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('العنوان'); const m=prompt('الرسالة'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
-                    <button className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
-                      const st = u.status === 1 ? 'unban' : 'ban';
-                      const re = st === 'ban' ? prompt('السبب؟') : "";
-                      adminDo({action:'toggle_ban', telegramId:u.telegramId, status: st, reason: re});
-                    }}>{u.status === 1 ? '🔓' : '🚫'}</button>
+            {tabLoading ? <div style={{textAlign:'center', padding:'20px', color:'#ffa500', fontWeight:'bold'}}>انتظر لحظة...</div> : (
+              <>
+                <h4 style={{margin:'10px 0'}}>📦 الطلبات المعلقة ({adminData.orders.length})</h4>
+                {adminData.orders.map((o:any) => (
+                  <div key={o.id} className="admin-card">
+                    <div style={{fontSize:'0.85rem', marginBottom:'8px'}}>👤 <b>{o.user?.firstName || o.telegramId}</b> <br/>🛍️ {o.description}</div>
+                    <div className="admin-btns">
+                      <button className="btn-mini" style={{background:'var(--success)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'completed', telegramId: o.telegramId})}>قبول</button>
+                      <button className="btn-mini" style={{background:'var(--danger)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'rejected', telegramId: o.telegramId})}>رفض</button>
+                    </div>
                   </div>
+                ))}
+                <h4 style={{margin:'20px 0 10px 0'}}>👥 قائمة الأعضاء</h4>
+                <div className="admin-card">
+                  {adminData.users.map((u:any) => (
+                    <div key={u.id} className="user-row">
+                      <div><b>{u.firstName}</b><br/><small>{u.points} XP</small></div>
+                      <div className="admin-btns">
+                        <button className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
+                        <button className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('العنوان'); const m=prompt('الرسالة'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
+                        <button className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
+                          const st = u.status === 1 ? 'unban' : 'ban';
+                          const re = st === 'ban' ? prompt('السبب؟') : "";
+                          adminDo({action:'toggle_ban', telegramId:u.telegramId, status: st, reason: re});
+                        }}>{u.status === 1 ? '🔓' : '🚫'}</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
         )}
       </div>
