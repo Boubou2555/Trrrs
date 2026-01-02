@@ -1,726 +1,137 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
-/* ==========================================
-   المتغيرات العامة
-   ========================================== */
 :root {
-  /* الألوان الأساسية */
   --primary: #7c3aed;
   --primary-dark: #6d28d9;
-  --primary-light: #a78bfa;
-  --secondary: #06b6d4;
-  --secondary-dark: #0891b2;
-  
-  /* الخلفيات */
   --bg-darker: #0f172a;
-  --bg-dark: #1e293b;
   --bg-card: rgba(255, 255, 255, 0.06);
-  --bg-card-hover: rgba(255, 255, 255, 0.1);
-  
-  /* النصوص */
   --text-light: #f1f5f9;
   --text-muted: rgba(241, 245, 249, 0.6);
-  
-  /* ألوان الحالات */
   --success: #10b981;
   --danger: #ef4444;
-  --warning: #f59e0b;
-  
-  /* الحدود والظلال */
-  --border-light: rgba(255, 255, 255, 0.1);
-  --border-lighter: rgba(255, 255, 255, 0.05);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
-  
-  /* الحواف */
-  --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 15px;
-  --radius-xl: 20px;
-  
-  /* الانتقالات */
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
+  --transition: 0.3s ease;
 }
 
-/* ==========================================
-   إعدادات عامة
-   ========================================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body {
   font-family: 'Tajawal', sans-serif;
   background-color: var(--bg-darker);
   color: var(--text-light);
   direction: rtl;
-  overflow-x: hidden;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
 }
 
-/* ==========================================
-   الحاوية الرئيسية
-   ========================================== */
-.main-container {
-  padding: 1rem;
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-darker) 0%, #1e293b 50%, #0f172a 100%);
-  padding-bottom: 80px;
-}
+.main-container { padding: 1rem; min-height: 100vh; padding-bottom: 80px; }
 
-/* ==========================================
-   هيدر المستخدم
-   ========================================== */
+/* الهيدر والتبويبات */
 .user-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(124, 58, 237, 0.3);
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  transition: var(--transition-normal);
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem; padding: 1rem; background: rgba(124, 58, 237, 0.1);
+  border-radius: var(--radius-lg); border: 1px solid rgba(124, 58, 237, 0.3);
 }
 
-.user-header:hover {
-  box-shadow: var(--shadow-md);
-}
+.user-avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--primary); }
 
-/* جانب المستخدم */
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px solid var(--primary);
-  object-fit: cover;
-  transition: var(--transition-normal);
-}
-
-.user-avatar:hover {
-  transform: scale(1.05);
-  border-color: var(--primary-light);
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.user-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-light);
-}
-
-.user-username {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-/* جانب الأدوات */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.header-balance {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(6, 182, 212, 0.25));
-  padding: 6px 14px;
-  border-radius: var(--radius-xl);
-  color: #a78bfa;
-  font-weight: 700;
-  font-size: 0.9rem;
-  border: 1px solid rgba(124, 58, 237, 0.4);
-  transition: var(--transition-fast);
-}
-
-.header-balance:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-}
-
-/* ==========================================
-   نظام الإشعارات
-   ========================================== */
-.notif-bell {
-  position: relative;
-  font-size: 1.4rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: var(--transition-fast);
-  padding: 8px;
-  border-radius: 50%;
-}
-
-.notif-bell:hover {
-  background: rgba(255, 255, 255, 0.05);
-  transform: scale(1.1);
-}
-
-.notif-bell:active {
-  transform: scale(0.95);
-}
-
-.red-dot {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 10px;
-  height: 10px;
-  background: var(--danger);
-  border-radius: 50%;
-  border: 2px solid var(--bg-darker);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { 
-    transform: scale(1); 
-    opacity: 1; 
-  }
-  50% { 
-    transform: scale(1.2); 
-    opacity: 0.6; 
-  }
-}
-
-/* صندوق الإشعارات - فوق المنتجات */
-.notif-box {
-  position: fixed;
-  top: 190px;  /* غيّر هذا الرقم للتحكم في الموضع */
-  left: 1rem;
-  right: 1rem;
-  background: #0f172a;
-  border-radius: 20px;
-  border: 2px solid var(--primary);
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9);
-  z-index: 999999;
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
-  animation: popCenter 0.3s ease;
-}
-
-/* إخفاء الـ scrollbar */
-.notif-box::-webkit-scrollbar {
-  display: none;
-}
-
-.notif-box {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-@keyframes popCenter {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* هيدر الصندوق */
-.notif-box > div:first-child {
-  padding: 1.2rem 1rem;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  backdrop-filter: blur(10px);
-}
-
-.notif-box > div:first-child b {
-  font-size: 1.05rem;
-  color: var(--text-light);
-  font-weight: 700;
-}
-
-.notif-box > div:first-child span {
-  cursor: pointer;
-  padding: 8px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: var(--transition-fast);
-  color: #ef4444;
-  font-size: 1.2rem;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.notif-box > div:first-child span:active {
-  background: rgba(239, 68, 68, 0.3);
-  transform: scale(0.9);
-}
-
-/* عناصر الإشعارات */
-.notif-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  transition: var(--transition-fast);
-}
-
-.notif-item:last-child {
-  border-bottom: none;
-  padding-bottom: 2rem;
-}
-
-.notif-item:active {
-  background: rgba(124, 58, 237, 0.15);
-}
-
-.notif-item img {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 2px solid var(--primary);
-}
-
-.notif-item > div {
-  flex: 1;
-  min-width: 0;
-}
-
-.notif-item b {
-  font-size: 0.95rem;
-  display: block;
-  margin-bottom: 4px;
-  color: var(--text-light);
-  font-weight: 600;
-}
-
-.notif-item p {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.4;
-}
-
-/* رسالة فارغة */
-.notif-box p[style*="textAlign"] {
-  padding: 3rem 1rem;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-/* ==========================================
-   التبويبات (Tabs)
-   ========================================== */
 .tabs-container {
-  display: grid;
-  background: var(--bg-card);
-  padding: 6px;
-  border-radius: var(--radius-md);
-  margin-bottom: 1.5rem;
-  gap: 6px;
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  z-index: 1;
+  display: grid; background: var(--bg-card); padding: 5px;
+  border-radius: var(--radius-md); margin-bottom: 1.5rem; gap: 5px;
 }
 
 .tab-button {
-  padding: 12px 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-light);
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: var(--transition-fast);
-  text-align: center;
+  padding: 12px; border: none; background: transparent; color: white;
+  font-weight: 600; cursor: pointer; border-radius: var(--radius-md);
 }
 
-.tab-button:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.05);
+.tab-button.active { background: var(--primary); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); }
+
+/* --- إصلاح لوحة الإدارة (Admin Section) --- */
+.admin-section { display: flex; flex-direction: column; gap: 20px; }
+
+.admin-section h3 { color: var(--primary); text-align: center; margin-bottom: 10px; }
+
+.admin-section h4 { 
+  margin: 10px 0; padding-right: 10px; border-right: 3px solid var(--primary); 
+  font-size: 0.9rem; color: var(--primary); 
 }
 
-.tab-button.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-  transform: translateY(-2px);
-}
-
-.tab-button:active {
-  transform: translateY(0);
-}
-
-/* ==========================================
-   المحتوى
-   ========================================== */
-.content {
-  margin-bottom: 2rem;
-}
-
-/* ==========================================
-   شبكة المنتجات
-   ========================================== */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 1.5rem;
-}
-
-.product-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid var(--border-light);
-  transition: var(--transition-normal);
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-}
-
-.product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary);
-}
-
-.product-card:active {
-  transform: translateY(-2px) scale(0.98);
-}
-
-.product-image {
+/* إصلاح حقول الإدخال المتداخلة في الصور */
+.admin-input {
   width: 100%;
-  height: 130px;
-  object-fit: cover;
-  transition: var(--transition-normal);
-}
-
-.product-card:hover .product-image {
-  transform: scale(1.05);
-}
-
-.p-info {
-  padding: 12px;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.p-info h3 {
-  font-size: 0.9rem;
-  margin-bottom: 6px;
-  color: var(--text-light);
-  font-weight: 600;
-}
-
-.p-info span {
-  color: var(--secondary);
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-/* ==========================================
-   سجل العمليات (History)
-   ========================================== */
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.history-item {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  padding: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid var(--border-lighter);
-  transition: var(--transition-fast);
-}
-
-.history-item:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-light);
-  transform: translateX(-4px);
-}
-
-.history-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-}
-
-.status-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.history-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.history-desc {
-  font-size: 0.9rem;
-  color: var(--text-light);
-  margin: 0 0 4px 0;
-  font-weight: 500;
-}
-
-.history-date {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.history-amount {
-  font-weight: 700;
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.history-amount.plus {
-  color: var(--success);
-}
-
-.history-amount.minus {
-  color: var(--danger);
-}
-
-.empty-msg {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-/* ==========================================
-   لوحة الإدارة (Admin Panel)
-   ========================================== */
-.admin-section {
-  margin-top: 1.5rem;
-}
-
-.admin-section h4 {
-  margin: 1.5rem 0 1rem;
-  color: var(--primary);
-  font-size: 0.95rem;
-  font-weight: 700;
-  padding-right: 10px;
-  border-right: 3px solid var(--primary);
-}
-
-.admin-card,
-.admin-user-row {
-  background: var(--bg-card);
-  padding: 14px;
-  border-radius: var(--radius-md);
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: white;
+  font-family: 'Tajawal';
   margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid var(--border-lighter);
-  transition: var(--transition-fast);
+  font-size: 0.9rem;
+  transition: var(--transition);
 }
 
-.admin-card:hover,
-.admin-user-row:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-light);
+.admin-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
 }
 
+/* تنظيم الأزرار */
 .admin-btns {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 5px;
 }
 
 .admin-btns button {
-  padding: 6px 14px;
+  padding: 12px;
   border: none;
-  border-radius: var(--radius-sm);
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.85rem;
-  transition: var(--transition-fast);
-  box-shadow: var(--shadow-sm);
-}
-
-.admin-btns button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.admin-btns button:active {
-  transform: translateY(0);
-}
-
-.btn-ok {
-  background: var(--success);
-}
-
-.btn-ok:hover {
-  background: #0ea376;
-}
-
-.btn-no {
-  background: var(--danger);
-}
-
-.btn-no:hover {
-  background: #dc2626;
-}
-
-.btn-blue {
-  background: var(--primary);
-}
-
-.btn-blue:hover {
-  background: var(--primary-dark);
-}
-
-/* ==========================================
-   شاشة الحظر
-   ========================================== */
-.banned-screen {
-  text-align: center;
-  padding: 100px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-}
-
-.banned-screen h2 {
-  color: var(--danger);
-  font-size: 1.8rem;
-  margin: 10px 0;
-}
-
-.banned-screen p {
-  color: var(--text-muted);
-  font-size: 1rem;
-  max-width: 400px;
-}
-
-/* ==========================================
-   التحميل (Loading)
-   ========================================== */
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--border-light);
-  border-top: 4px solid var(--primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 100px auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ==========================================
-   الفوتر
-   ========================================== */
-.footer {
-  text-align: center;
-  padding: 1.5rem 0;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  margin-top: 2rem;
-}
-
-.footer span {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-/* ==========================================
-   Scrollbar مخصص
-   ========================================== */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-darker);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--primary);
   border-radius: 10px;
+  color: white;
+  font-weight: bold;
+  font-family: 'Tajawal';
+  cursor: pointer;
+  transition: var(--transition);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-dark);
+.btn-ok { background: var(--success); }
+.btn-no { background: var(--danger); }
+
+.admin-card {
+  background: var(--bg-card);
+  padding: 15px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* ==========================================
-   تحسينات للشاشات الصغيرة
-   ========================================== */
-@media (max-width: 480px) {
-  .user-header {
-    padding: 12px;
-  }
-  
-  .user-avatar {
-    width: 45px;
-    height: 45px;
-  }
-  
-  .user-name {
-    font-size: 0.95rem;
-  }
-  
-  .header-balance {
-    font-size: 0.85rem;
-    padding: 5px 10px;
-  }
-  
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .tab-button {
-    font-size: 0.8rem;
-    padding: 10px 6px;
-  }
-  
-  .notif-box {
-    width: calc(100% - 1.5rem);
-    max-height: 85vh;
-  }
+/* قائمة الأعضاء */
+.users-list {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
+
+.user-item-admin {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+}
+
+.user-item-admin:last-child { border-bottom: none; }
+
+.user-item-admin span { color: var(--text-muted); }
+.user-item-admin b { color: var(--primary); }
+
+/* تحسين شكل المنتجات */
+.products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.product-card { background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+.product-image { width: 100%; height: 120px; object-fit: cover; }
+.p-info { padding: 10px; text-align: center; }
+.p-info h3 { font-size: 0.8rem; margin-bottom: 5px; }
+.p-info span { color: var(--primary); font-weight: bold; font-size: 0.9rem; }
+
+.footer { text-align: center; margin-top: 30px; font-size: 0.7rem; color: var(--text-muted); }
+.footer span { color: var(--primary); font-weight: bold; }
