@@ -20,7 +20,7 @@ export async function POST(req: Request) {
             if (action === 'manage_points') {
                 const val = parseInt(amount);
                 const updated = await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: val } } });
-                await prisma.transaction.create({ data: { telegramId: userId, type: 'admin', description: val > 0 ? '🎁 مكافأة من المسؤول' : '⚠️ خصم من المسؤول', amount: val, status: 'completed' } });
+                await prisma.transaction.create({ data: { telegramId: userId, type: 'admin', description: val > 0 ? '🎁 مكافأة' : '⚠️ خصم', amount: val, status: 'completed' } });
                 return NextResponse.json({ success: true, points: updated.points });
             }
             if (action === 'send_notif') {
@@ -38,12 +38,10 @@ export async function POST(req: Request) {
         }
 
         const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
-        if (checkUser?.status === 1 && action !== 'login_check') {
-            return NextResponse.json({ success: false, banned: true, reason: checkUser.banReason });
-        }
+        if (checkUser?.status === 1 && action !== 'login_check') return NextResponse.json({ success: false, banned: true, reason: checkUser.banReason });
 
         if (action === 'watch_ad') {
-            if (checkUser && checkUser.adsCount >= MAX_ADS) return NextResponse.json({ success: false, message: 'الحد الأقصى' });
+            if (checkUser && checkUser.adsCount >= MAX_ADS) return NextResponse.json({ success: false });
             const user = await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: 1 }, adsCount: { increment: 1 } } });
             await prisma.transaction.create({ data: { telegramId: userId, type: 'ad', description: 'مشاهدة إعلان', amount: 1, status: 'completed' } });
             return NextResponse.json({ success: true, newPoints: user.points, newAdsCount: user.adsCount });
