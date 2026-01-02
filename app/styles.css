@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 /* ==========================================
-   المتغيرات الأساسية والتأسيس
+   المتغيرات والتأسيس
    ========================================== */
 :root {
   --primary: #7c3aed;
@@ -41,7 +41,7 @@ body {
 }
 
 /* ==========================================
-   الهيدر ونظام التنبيهات (النقطة الحمراء)
+   الهيدر (تنسيق الرصيد والجرس بالأسفل)
    ========================================== */
 .user-header { 
   display: flex; 
@@ -55,7 +55,11 @@ body {
   margin-bottom: 1.5rem; 
 }
 
-.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+}
 
 .user-avatar { 
   width: 50px; 
@@ -65,25 +69,46 @@ body {
   object-fit: cover; 
 }
 
+/* الجهة اليمنى: الرصيد فوق والجرس تحت */
+.header-right { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 8px; 
+}
+
 .header-balance { 
   background: rgba(124, 58, 237, 0.25); 
-  padding: 6px 14px; 
-  border-radius: var(--radius-xl); 
+  padding: 5px 15px; 
+  border-radius: 20px; 
   color: #a78bfa; 
   font-weight: 700; 
-  border: 1px solid rgba(124, 58, 237, 0.4); 
+  border: 1px solid rgba(124, 58, 237, 0.4);
   font-size: 0.9rem;
+  min-width: 85px;
+  text-align: center;
 }
 
 .notif-bell-wrapper { 
   position: relative; 
-  font-size: 1.5rem; 
-  cursor: pointer; 
+  font-size: 1.3rem; 
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
 }
 
-/* النقطة الحمراء مع الأنيميشن النابض */
+.notif-bell-wrapper:active {
+  transform: scale(0.9);
+}
+
+/* النقطة الحمراء المتحركة */
 .red-dot { 
   position: absolute; 
   top: 2px; 
@@ -103,7 +128,7 @@ body {
 }
 
 /* ==========================================
-   صندوق الإشعارات والتبويبات
+   صندوق الإشعارات
    ========================================== */
 .notif-box { 
   position: fixed; 
@@ -124,13 +149,16 @@ body {
 .notif-img { 
   width: 45px; 
   height: 45px; 
-  border-radius: 50%; /* دائرية كما طلبت */
+  border-radius: 50%; 
   object-fit: cover; 
   border: 1px solid var(--primary); 
 }
 
 .notif-item { display: flex; align-items: center; gap: 12px; padding: 14px 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 
+/* ==========================================
+   التبويبات والمنتجات
+   ========================================== */
 .tabs-container { 
   display: grid; 
   grid-template-columns: repeat(4, 1fr); 
@@ -149,7 +177,6 @@ body {
   font-size: 0.8rem; 
   border-radius: 8px; 
   cursor: pointer; 
-  transition: 0.3s;
 }
 
 .tab-button.active { 
@@ -157,33 +184,17 @@ body {
   box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); 
 }
 
-/* ==========================================
-   الحالات الملونة والسجل
-   ========================================== */
-.status-text { 
-  font-size: 0.7rem; 
-  font-weight: 700; 
-  padding: 3px 8px; 
-  border-radius: 5px; 
-}
+.products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-.status-completed { color: var(--success); background: rgba(16, 185, 129, 0.1); }
-.status-rejected { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
-.status-pending { color: var(--warning); background: rgba(245, 158, 11, 0.1); }
-
-.history-item { 
+.product-card { 
   background: var(--bg-card); 
-  padding: 15px; 
-  border-radius: var(--radius-md); 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  border: 1px solid rgba(255, 255, 255, 0.05); 
-  margin-bottom: 10px; 
+  border-radius: var(--radius-lg); 
+  overflow: hidden; 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  cursor: pointer; 
 }
 
-.plus { color: var(--success); font-weight: bold; }
-.minus { color: var(--danger); font-weight: bold; }
+.product-image { width: 100%; height: 110px; object-fit: cover; }
 
 /* ==========================================
    لوحة الإدارة وقائمة الأعضاء
@@ -214,25 +225,12 @@ body {
   cursor: pointer; 
   font-size: 0.8rem; 
   font-weight: bold; 
-  transition: transform 0.2s;
 }
 
-.btn-mini:active { transform: scale(0.9); }
-
-/* ==========================================
-   المنتجات والتحميل
-   ========================================== */
-.products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-.product-card { 
-  background: var(--bg-card); 
-  border-radius: var(--radius-lg); 
-  overflow: hidden; 
-  border: 1px solid rgba(255, 255, 255, 0.1); 
-  cursor: pointer; 
-}
-
-.product-image { width: 100%; height: 110px; object-fit: cover; }
+/* الحالات الملونة */
+.status-text { font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
+.status-completed { color: var(--success); background: rgba(16, 185, 129, 0.1); }
+.status-rejected { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
 
 .loading-spinner { 
   width: 40px; 
