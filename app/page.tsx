@@ -75,7 +75,7 @@ export default function Home() {
       <div className="history-item" style={{marginTop:'20px', justifyContent:'center'}}>
         <b>السبب: {user.reason || "مخالفة القوانين"}</b>
       </div>
-      <p style={{marginTop:'20px', opacity:0.6}}>تواصل مع الإدارة لفك الحظر</p>
+      <p style={{marginTop:'20px', opacity:0.6}}>تواصل مع المسؤول لفك الحظر</p>
     </div>
   )
 
