@@ -286,7 +286,7 @@ export default function Home() {
                       <div className="admin-btns">
                         <button title="إضافة/خصم نقاط" className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
                         <button title="إرسال إشعار" className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('عنوان الإشعار'); const m=prompt(' رسالة المسؤول'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
-                        <button title="حظر/إلغاء حظر" className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'grandis'}} onClick={() => {
+                        <button title="حظر/إلغاء حظر" className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'aquamarine'}} onClick={() => {
                           const st = u.status === 1 ? 'unban' : 'ban';
                           const re = st === 'ban' ? prompt('سبب الحظر؟') : "";
                           adminDo({action:'toggle_ban', telegramId:u.telegramId, status: st, reason: re});
