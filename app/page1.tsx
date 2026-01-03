@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 
 export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: number) => void }) {
   const [user, setUser] = useState<any>(null)
@@ -7,12 +7,20 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   const [isLoading, setIsLoading] = useState(false)
   const [notification, setNotification] = useState('')
   const [timeLeft, setTimeLeft] = useState('')
+  const [lastAdDate, setLastAdDate] = useState<string | null>(null)
   const MAX_ADS = 10 
+  
+  // نستخدم useRef لتخزين المعرف الخاص بالـ interval لمسحه عند الحاجة
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const calculateTime = useCallback((lastAdDate: string) => {
-    const timer = setInterval(() => {
-      const lastDate = new Date(lastAdDate).getTime();
-      const nextDate = lastDate + (24 * 60 * 60 * 1000);
+  // وظيفة تحديث الوقت (منفصلة عن الـ Effect لتسهيل التحكم)
+  const startCountdown = useCallback((dateStr: string) => {
+    // مسح أي مؤقت قديم قبل بدء واحد جديد
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    const updateTimer = () => {
+      const lastDate = new Date(dateStr).getTime();
+      const nextDate = lastDate + (24 * 60 * 60 * 1000); // 24 ساعة
       const now = new Date().getTime();
       const diff = nextDate - now;
 
@@ -23,12 +31,15 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         setTimeLeft(`${h}h ${m}m ${s}s`);
       } else {
         setTimeLeft('');
-        clearInterval(timer);
+        if (timerRef.current) clearInterval(timerRef.current);
       }
-    }, 1000);
-    return () => clearInterval(timer);
+    };
+
+    updateTimer(); // التحديث الفوري الأول
+    timerRef.current = setInterval(updateTimer, 1000);
   }, []);
 
+  // جلب البيانات عند تحميل الصفحة
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
@@ -38,17 +49,24 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         .then(data => { 
           if (data.success) {
             setAdsCount(data.user?.adsCount || 0)
-            if (data.user?.lastAdDate) calculateTime(data.user.lastAdDate);
+            if (data.user?.lastAdDate) {
+                setLastAdDate(data.user.lastAdDate);
+                startCountdown(data.user.lastAdDate);
+            }
           }
         })
     }
-  }, [calculateTime])
 
-  // وظيفة جلب إعلان Monetag في حال فشل Adsgram
+    // تنظيف المؤقت عند إغلاق الصفحة
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  }, [startCountdown])
+
   const handleMonetagFallback = () => {
     const showMonetagAd = (window as any).show_10400479;
     if (showMonetagAd) {
-      setNotification('📺 جاري محضير إعلان بديل...');
+      setNotification('📺 جاري تحضير إعلان بديل...');
       showMonetagAd()
         .then(() => {
           setNotification('✅ أحسنت! جاري تحديث بياناتك...');
@@ -84,12 +102,10 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
           }
         })
         .catch(() => { 
-          // بدلاً من إظهار رسالة الخطأ مباشرة، نقوم باستدعاء Monetag
           console.log("Adsgram failed, switching to Monetag...");
           handleMonetagFallback();
         });
     } else {
-        // إذا لم يكن Adsgram موجوداً أصلاً
         handleMonetagFallback();
     }
   };
@@ -105,7 +121,10 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
       if (data.success) {
         setAdsCount(data.newAdsCount);
         onPointsUpdate(data.newPoints);
-        if (data.lastAdDate) calculateTime(data.lastAdDate);
+        if (data.lastAdDate) {
+            setLastAdDate(data.lastAdDate);
+            startCountdown(data.lastAdDate); // تشغيل العداد فوراً بعد اكتمال الإعلانات
+        }
         setNotification('💰 تمت إضافة النقطة بنجاح!');
       }
     } finally { setIsLoading(false); }
@@ -115,11 +134,11 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
         <span style={{ fontSize: '14px', color: '#ccc' }}>مهمة المشاهدة اليومية</span>
-        <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{adsCount} / {MAX_ADS}</span>
+        <span style={{ fontWeight: 'bold', color: '#6c5ce7' }}>{adsCount} / {MAX_ADS}</span>
       </div>
       
       <div style={{ width: '100%', height: '12px', background: '#1a1a1a', borderRadius: '6px', marginBottom: '25px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
-        <div style={{ width: `${(adsCount / MAX_ADS) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #6c5ce7, #a29bfe)', transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
+        <div style={{ width: `${Math.min((adsCount / MAX_ADS) * 100, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #6c5ce7, #a29bfe)', transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
       </div>
 
       {adsCount >= MAX_ADS && timeLeft && (
@@ -138,7 +157,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
           border: 'none', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '16px',
           cursor: (adsCount >= MAX_ADS || isLoading) ? 'not-allowed' : 'pointer',
           boxShadow: adsCount >= MAX_ADS ? 'none' : '0 10px 20px rgba(108, 92, 231, 0.3)',
-          transition: 'transform 0.2s active'
+          transition: 'all 0.2s ease'
         }}
       >
         {isLoading ? '⏳ انتظر قليلاً...' : adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : '📺 مشاهدة إعلان (+1 نقطة)'}
