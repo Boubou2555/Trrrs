@@ -38,13 +38,38 @@ export async function POST(req: Request) {
         }
 
         const checkUser = await prisma.user.findUnique({ where: { telegramId: userId } });
+        
+        // --- منطق تصفير المشاهدات بناءً على lastAdDate ---
+        if (checkUser && checkUser.lastAdDate) {
+            const lastDate = new Date(checkUser.lastAdDate).getTime();
+            const now = new Date().getTime();
+            const hoursPassed = (now - lastDate) / (1000 * 60 * 60);
+
+            if (hoursPassed >= 24 && checkUser.adsCount > 0) {
+                await prisma.user.update({
+                    where: { telegramId: userId },
+                    data: { adsCount: 0 }
+                });
+                checkUser.adsCount = 0;
+            }
+        }
+
         if (checkUser?.status === 1 && action !== 'login_check') return NextResponse.json({ success: false, banned: true, reason: checkUser.banReason });
 
         if (action === 'watch_ad') {
             if (checkUser && checkUser.adsCount >= MAX_ADS) return NextResponse.json({ success: false });
-            const user = await prisma.user.update({ where: { telegramId: userId }, data: { points: { increment: 1 }, adsCount: { increment: 1 } } });
+            
+            const user = await prisma.user.update({ 
+                where: { telegramId: userId }, 
+                data: { 
+                    points: { increment: 1 }, 
+                    adsCount: { increment: 1 },
+                    lastAdDate: new Date() // تحديث تاريخ آخر مشاهدة
+                } 
+            });
+            
             await prisma.transaction.create({ data: { telegramId: userId, type: 'ad', description: 'مشاهدة إعلان', amount: 1, status: 'completed' } });
-            return NextResponse.json({ success: true, newPoints: user.points, newAdsCount: user.adsCount });
+            return NextResponse.json({ success: true, newPoints: user.points, newAdsCount: user.adsCount, lastAdDate: user.lastAdDate });
         }
 
         if (action === 'purchase_product') {
@@ -56,7 +81,7 @@ export async function POST(req: Request) {
         const user = await prisma.user.upsert({
             where: { telegramId: userId },
             update: { username: body.username, firstName: body.first_name, photoUrl: body.photo_url },
-            create: { telegramId: userId, username: body.username, firstName: body.first_name, photoUrl: body.photo_url, points: 0, adsCount: 0 }
+            create: { telegramId: userId, username: body.username, firstName: body.first_name, photoUrl: body.photo_url, points: 0, adsCount: 0, lastAdDate: new Date() }
         });
         return NextResponse.json({ success: true, points: user.points, banned: user.status === 1, reason: user.banReason, user });
     } catch (e) { return NextResponse.json({ success: false }); }
@@ -68,31 +93,35 @@ export async function GET(req: Request) {
     const adminId = parseInt(searchParams.get('adminId') || "0");
 
     if (adminId === ADMIN_ID) {
-        // جلب الطلبات المعلقة
         const pendingTransactions = await prisma.transaction.findMany({ 
             where: { status: 'pending' }, 
             orderBy: { createdAt: 'desc' }
         });
-
-        // جلب جميع المستخدمين لدمج البيانات يدوياً وتفادي خطأ الـ Type
         const allUsers = await prisma.user.findMany();
-
-        // دمج بيانات المستخدم مع كل طلب
         const ordersWithUsers = pendingTransactions.map(order => ({
             ...order,
             user: allUsers.find(u => u.telegramId === order.telegramId) || null
         }));
-
         const usersList = await prisma.user.findMany({ orderBy: { points: 'desc' }, take: 100 });
-        
-        return NextResponse.json({ 
-            success: true, 
-            orders: ordersWithUsers, 
-            users: usersList 
-        });
+        return NextResponse.json({ success: true, orders: ordersWithUsers, users: usersList });
     }
     
-    const userData = await prisma.user.findUnique({ where: { telegramId: userId } });
+    let userData = await prisma.user.findUnique({ where: { telegramId: userId } });
+
+    // التحقق من التصفير في طلب الـ GET أيضاً
+    if (userData && userData.lastAdDate) {
+        const lastDate = new Date(userData.lastAdDate).getTime();
+        const now = new Date().getTime();
+        const hoursPassed = (now - lastDate) / (1000 * 60 * 60);
+
+        if (hoursPassed >= 24 && userData.adsCount > 0) {
+            userData = await prisma.user.update({
+                where: { telegramId: userId },
+                data: { adsCount: 0 }
+            });
+        }
+    }
+
     const history = await prisma.transaction.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 20 });
     const notifs = await prisma.notification.findMany({ where: { telegramId: userId }, orderBy: { createdAt: 'desc' }, take: 15 });
     
