@@ -6,6 +6,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [notification, setNotification] = useState('')
+  const [timeLeft, setTimeLeft] = useState('')
   const MAX_ADS = 10 
 
   useEffect(() => {
@@ -14,9 +15,38 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
       setUser(tg.initDataUnsafe.user)
       fetch(`/api/increase-points?telegramId=${tg.initDataUnsafe.user.id}`)
         .then(res => res.json())
-        .then(data => { if (data.success) setAdsCount(data.user?.adsCount || 0) })
+        .then(data => { 
+          if (data.success) {
+            setAdsCount(data.user?.adsCount || 0)
+            if (data.user?.lastAdDate) startTimer(data.user.lastAdDate);
+          }
+        })
     }
   }, [])
+
+  // وظيفة حساب الوقت المتبقي
+  const startTimer = (lastAdDate: string) => {
+    const timerFunc = () => {
+      const lastDate = new Date(lastAdDate).getTime();
+      const nextAvailable = lastDate + (24 * 60 * 60 * 1000); // إضافة 24 ساعة
+      const now = new Date().getTime();
+      const diff = nextAvailable - now;
+
+      if (diff > 0) {
+        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
+      } else {
+        setTimeLeft('');
+        if (adsCount >= MAX_ADS) setAdsCount(0); // تصفير وهمي في الواجهة حتى يتم التحديث الفعلي
+      }
+    };
+
+    timerFunc();
+    const interval = setInterval(timerFunc, 1000);
+    return () => clearInterval(interval);
+  };
 
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
@@ -25,14 +55,12 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     const adsgram = (window as any).Adsgram;
     if (adsgram) {
       setNotification('📺 جاري تحميل الإعلان...');
-      // المعرف الجديد المستخرج من الصورة الأخيرة
       const AdController = adsgram.init({ blockId: "20471" }); 
       
       AdController.show()
         .then((result: any) => {
-          // التحقق من أن done تساوي true كما في أنواع البيانات الموضحة بالصور
           if (result.done) { 
-            setNotification('✅ تمت المشاهدة! جاري تحديث الرصيد...');
+            setNotification('✅ تمت المشاهدة!');
             processReward();
           } else {
             setIsLoading(false);
@@ -41,11 +69,8 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         })
         .catch((err: any) => { 
           setIsLoading(false); 
-          setNotification(`❌ خطأ: ${err.description || 'تعذر جلب الإعلان'}`); 
+          setNotification(`❌ خطأ في الإعلان`); 
         });
-    } else {
-      setNotification('⏳ جاري تهيئة النظام...');
-      setTimeout(() => { setIsLoading(false); handleWatchAd(); }, 2000);
     }
   };
 
@@ -59,6 +84,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
       if (data.success) {
         setAdsCount(data.newAdsCount);
         onPointsUpdate(data.newPoints);
+        if (data.lastAdDate) startTimer(data.lastAdDate);
       }
     } finally { setIsLoading(false); }
   };
@@ -66,12 +92,21 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   return (
     <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
       <p style={{marginBottom: '10px'}}>التقدم اليومي: {adsCount} / {MAX_ADS}</p>
+      
       <div style={{width:'100%', height:'8px', background:'#333', borderRadius:'4px', marginBottom:'20px', overflow:'hidden'}}>
         <div style={{width:`${(adsCount/MAX_ADS)*100}%`, height:'100%', background:'var(--primary)'}}></div>
       </div>
+
+      {adsCount >= MAX_ADS && timeLeft && (
+        <p style={{fontSize: '14px', color: '#fbc531', marginBottom: '10px'}}>
+          ⏳ تفتح المهام الجديدة بعد: {timeLeft}
+        </p>
+      )}
+
       <button onClick={handleWatchAd} disabled={adsCount >= MAX_ADS || isLoading} style={{ width: '100%', padding: '15px', background: 'var(--primary)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: 'bold' }}>
-        {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد الإعلان'}
+        {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت اليوم' : '📺 شاهد الإعلان'}
       </button>
+      
       {notification && <p style={{fontSize:'12px', marginTop:'10px', color: '#a29bfe'}}>{notification}</p>}
     </div>
   )
