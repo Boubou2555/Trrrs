@@ -290,7 +290,7 @@ export default function Home() {
                           const st = u.status === 1 ? 'unban' : 'ban';
                           const re = st === 'ban' ? prompt('سبب الحظر؟') : "";
                           adminDo({action:'toggle_ban', telegramId:u.telegramId, status: st, reason: re});
-                        }}>{u.status === 1 ? '🔓' : '🚫'}</button>
+                        }}>{u.status === 1 ? '🔓' : '🔨'}</button>
                       </div>
                     </div>
                   ))}
