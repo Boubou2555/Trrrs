@@ -183,7 +183,7 @@ export default function Home() {
       {/* قائمة التبويبات */}
       <div className="tabs-container" style={{ display: 'grid', gridTemplateColumns: user?.id === ADMIN_ID ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)' }}>
         <button onClick={()=>setActiveTab('products')} className={activeTab==='products'?'tab-button active':'tab-button'}>المنتجات</button>
-        <button onClick={()=>setActiveTab('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>الهدية</button>
+        <button onClick={()=>setActiveTab('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>المهام</button>
         <button onClick={()=>setActiveTab('history')} className={activeTab==='history'?'tab-button active':'tab-button'}>السجل</button>
         {user?.id === ADMIN_ID && <button onClick={()=>setActiveTab('admin')} className={activeTab==='admin'?'tab-button active':'tab-button'}>إدارة</button>}
       </div>
@@ -284,9 +284,9 @@ export default function Home() {
                         <span style={{fontSize:'0.7rem', opacity:0.6}}>{u.points} XP</span>
                       </div>
                       <div className="admin-btns">
-                        <button title="إضافة/خصم نقاط" className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة المراد إضافتها (أو خصمها بوضع -)؟'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
-                        <button title="إرسال إشعار" className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('عنوان الإشعار'); const m=prompt('محتوى الرسالة'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
-                        <button title="حظر/إلغاء حظر" className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'red'}} onClick={() => {
+                        <button title="إضافة/خصم نقاط" className="btn-mini" style={{background:'var(--success)'}} onClick={() => {const a=prompt('القيمة'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
+                        <button title="إرسال إشعار" className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const t=prompt('عنوان الإشعار'); const m=prompt(' رسالة المسؤول'); t && m && adminDo({action:'send_notif', telegramId:u.telegramId, title:t, message:m})}}>🔔</button>
+                        <button title="حظر/إلغاء حظر" className="btn-mini" style={{background: u.status === 1 ? 'gray' : 'grandis'}} onClick={() => {
                           const st = u.status === 1 ? 'unban' : 'ban';
                           const re = st === 'ban' ? prompt('سبب الحظر؟') : "";
                           adminDo({action:'toggle_ban', telegramId:u.telegramId, status: st, reason: re});
