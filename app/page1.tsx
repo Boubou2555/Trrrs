@@ -55,7 +55,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     const adsgram = (window as any).Adsgram;
     if (adsgram) {
       setNotification('📺 جاري تحميل الإعلان...');
-      const AdController = adsgram.init({ blockId: "20471" }); 
+      const AdController = adsgram.init({ blockId: "630" }); 
       
       AdController.show()
         .then((result: any) => {
