@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import './tasks.css' // ربط ملف التنسيق الخاص بك
 
 export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: number) => void }) {
   const [user, setUser] = useState<any>(null)
@@ -45,49 +44,29 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     }
   }, [calculateTime])
 
-  // وظيفة إعلانات Monetag الاحتياطية في حال لم يجد Adsgram إعلاناً
-  const showMonetagAd = () => {
-    const monetagShow = (window as any).show_10400479;
-    if (monetagShow) {
-      setNotification('🔄 جاري محاولة تحميل إعلان بديل...');
-      monetagShow().then(() => {
-        processReward();
-      }).catch(() => {
-        setIsLoading(false);
-        setNotification('❌ عذراً، لا توجد إعلانات متوفرة حالياً');
-      });
-    } else {
-      setIsLoading(false);
-      setNotification('❌ فشل تحميل مزود الإعلانات الاحتياطي');
-    }
-  };
-
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
     setIsLoading(true);
 
     const adsgram = (window as any).Adsgram;
     if (adsgram) {
-      setNotification('📺 جاري طلب الإعلان...');
-      // الكود بدون debug: true كما طلبت
-      const AdController = adsgram.init({ blockId: "20476" }); 
+      setNotification('📺 جاري تحضير الإعلان...');
+      const AdController = adsgram.init({ blockId: "20471", debug: true }); 
       
       AdController.show()
         .then((result: any) => {
           if (result.done) { 
+            setNotification('✅ أحسنت! جاري تحديث بياناتك...');
             processReward();
           } else {
             setIsLoading(false);
-            setNotification('⚠️ يجب إكمال المشاهدة للحصول على الجائزة');
+            setNotification('⚠️ يجب مشاهدة الإعلان كاملاً');
           }
         })
-        .catch((err: any) => { 
-          // التحويل التلقائي لـ Monetag عند ظهور خطأ "No ads available"
-          console.warn("Adsgram failed, switching to Monetag...");
-          showMonetagAd(); 
+        .catch(() => { 
+          setIsLoading(false); 
+          setNotification(`❌ خطأ: تأكد من عدم وجود AdBlock`); 
         });
-    } else {
-      showMonetagAd();
     }
   };
 
@@ -103,41 +82,46 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         setAdsCount(data.newAdsCount);
         onPointsUpdate(data.newPoints);
         if (data.lastAdDate) calculateTime(data.lastAdDate);
-        setNotification('🎉 تم إضافة الجائزة إلى رصيدك بنجاح!'); 
+        setNotification('💰 تمت إضافة النقطة بنجاح!');
       }
     } finally { setIsLoading(false); }
   };
 
   return (
-    <div className="task-container">
-      <div className="task-header">
-        <span className="task-title">المهام اليومية</span>
-        <span className="task-counter">{adsCount} / {MAX_ADS}</span>
+    <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <span style={{ fontSize: '14px', color: '#ccc' }}>مهمة المشاهدة اليومية</span>
+        <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{adsCount} / {MAX_ADS}</span>
       </div>
       
-      <div className="progress-bar-bg">
-        <div 
-          className="progress-bar-fill" 
-          style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}
-        ></div>
+      {/* Progress Bar */}
+      <div style={{ width: '100%', height: '12px', background: '#1a1a1a', borderRadius: '6px', marginBottom: '25px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
+        <div style={{ width: `${(adsCount / MAX_ADS) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #6c5ce7, #a29bfe)', transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
       </div>
 
       {adsCount >= MAX_ADS && timeLeft && (
-        <div className="timer-box">
-          <p className="timer-text">المهمة القادمة تفتح خلال:</p>
-          <p className="timer-clock">{timeLeft}</p>
+        <div style={{ background: 'rgba(255, 159, 67, 0.1)', padding: '12px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255, 159, 67, 0.2)' }}>
+          <p style={{ fontSize: '12px', color: '#ff9f43', margin: '0 0 5px 0' }}>انتظر حتى اليوم التالي للمشاهدة مرة أخرى</p>
+          <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff', margin: 0 }}>{timeLeft}</p>
         </div>
       )}
 
       <button 
-        className={`watch-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
         onClick={handleWatchAd} 
-        disabled={adsCount >= MAX_ADS || isLoading}
+        disabled={adsCount >= MAX_ADS || isLoading} 
+        style={{ 
+          width: '100%', padding: '18px', 
+          background: adsCount >= MAX_ADS ? '#2d3436' : 'linear-gradient(135deg, #6c5ce7, #8e44ad)', 
+          border: 'none', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '16px',
+          cursor: (adsCount >= MAX_ADS || isLoading) ? 'not-allowed' : 'pointer',
+          boxShadow: adsCount >= MAX_ADS ? 'none' : '0 10px 20px rgba(108, 92, 231, 0.3)',
+          transition: 'transform 0.2s active'
+        }}
       >
-        {isLoading ? '⏳ جاري المعالجة...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد واربح (+1)'}
+        {isLoading ? '⏳ انتظر قليلاً...' : adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : '📺 مشاهدة إعلان (+1 نقطة)'}
       </button>
       
-      {notification && <p className="status-message">{notification}</p>}
+      {notification && <p style={{ fontSize: '13px', marginTop: '15px', color: '#a29bfe', fontWeight: '500' }}>{notification}</p>}
     </div>
   )
 }
