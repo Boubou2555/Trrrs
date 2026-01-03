@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import './tasks.css' // ربط ملف التنسيق الخاص بك
 
 export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: number) => void }) {
   const [user, setUser] = useState<any>(null)
@@ -8,6 +9,26 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   const [notification, setNotification] = useState('')
   const [timeLeft, setTimeLeft] = useState('')
   const MAX_ADS = 10 
+
+  const calculateTime = useCallback((lastAdDate: string) => {
+    const timer = setInterval(() => {
+      const lastDate = new Date(lastAdDate).getTime();
+      const nextDate = lastDate + (24 * 60 * 60 * 1000);
+      const now = new Date().getTime();
+      const diff = nextDate - now;
+
+      if (diff > 0) {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
+      } else {
+        setTimeLeft('');
+        clearInterval(timer);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
@@ -18,34 +39,27 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         .then(data => { 
           if (data.success) {
             setAdsCount(data.user?.adsCount || 0)
-            if (data.user?.lastAdDate) startTimer(data.user.lastAdDate);
+            if (data.user?.lastAdDate) calculateTime(data.user.lastAdDate);
           }
         })
     }
-  }, [])
+  }, [calculateTime])
 
-  // وظيفة حساب الوقت المتبقي
-  const startTimer = (lastAdDate: string) => {
-    const timerFunc = () => {
-      const lastDate = new Date(lastAdDate).getTime();
-      const nextAvailable = lastDate + (24 * 60 * 60 * 1000); // إضافة 24 ساعة
-      const now = new Date().getTime();
-      const diff = nextAvailable - now;
-
-      if (diff > 0) {
-        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const m = Math.floor((diff / (1000 * 60)) % 60);
-        const s = Math.floor((diff / 1000) % 60);
-        setTimeLeft(`${h}h ${m}m ${s}s`);
-      } else {
-        setTimeLeft('');
-        if (adsCount >= MAX_ADS) setAdsCount(0); // تصفير وهمي في الواجهة حتى يتم التحديث الفعلي
-      }
-    };
-
-    timerFunc();
-    const interval = setInterval(timerFunc, 1000);
-    return () => clearInterval(interval);
+  // وظيفة إعلانات Monetag الاحتياطية في حال لم يجد Adsgram إعلاناً
+  const showMonetagAd = () => {
+    const monetagShow = (window as any).show_10400479;
+    if (monetagShow) {
+      setNotification('🔄 جاري محاولة تحميل إعلان بديل...');
+      monetagShow().then(() => {
+        processReward();
+      }).catch(() => {
+        setIsLoading(false);
+        setNotification('❌ عذراً، لا توجد إعلانات متوفرة حالياً');
+      });
+    } else {
+      setIsLoading(false);
+      setNotification('❌ فشل تحميل مزود الإعلانات الاحتياطي');
+    }
   };
 
   const handleWatchAd = async () => {
@@ -54,23 +68,26 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
 
     const adsgram = (window as any).Adsgram;
     if (adsgram) {
-      setNotification('📺 جاري تحميل الإعلان...');
+      setNotification('📺 جاري طلب الإعلان...');
+      // الكود بدون debug: true كما طلبت
       const AdController = adsgram.init({ blockId: "20476" }); 
       
       AdController.show()
         .then((result: any) => {
           if (result.done) { 
-            setNotification('✅ تمت المشاهدة!');
             processReward();
           } else {
             setIsLoading(false);
-            setNotification('⚠️ لم تكتمل المشاهدة');
+            setNotification('⚠️ يجب إكمال المشاهدة للحصول على الجائزة');
           }
         })
         .catch((err: any) => { 
-          setIsLoading(false); 
-          setNotification(`❌ خطأ في الإعلان`); 
+          // التحويل التلقائي لـ Monetag عند ظهور خطأ "No ads available"
+          console.warn("Adsgram failed, switching to Monetag...");
+          showMonetagAd(); 
         });
+    } else {
+      showMonetagAd();
     }
   };
 
@@ -78,36 +95,49 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     try {
       const res = await fetch('/api/increase-points', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ telegramId: user.id, action: 'watch_ad' }),
       });
       const data = await res.json();
       if (data.success) {
         setAdsCount(data.newAdsCount);
         onPointsUpdate(data.newPoints);
-        if (data.lastAdDate) startTimer(data.lastAdDate);
+        if (data.lastAdDate) calculateTime(data.lastAdDate);
+        setNotification('🎉 تم إضافة الجائزة إلى رصيدك بنجاح!'); 
       }
     } finally { setIsLoading(false); }
   };
 
   return (
-    <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-      <p style={{marginBottom: '10px'}}>التقدم اليومي: {adsCount} / {MAX_ADS}</p>
+    <div className="task-container">
+      <div className="task-header">
+        <span className="task-title">المهام اليومية</span>
+        <span className="task-counter">{adsCount} / {MAX_ADS}</span>
+      </div>
       
-      <div style={{width:'100%', height:'8px', background:'#333', borderRadius:'4px', marginBottom:'20px', overflow:'hidden'}}>
-        <div style={{width:`${(adsCount/MAX_ADS)*100}%`, height:'100%', background:'var(--primary)'}}></div>
+      <div className="progress-bar-bg">
+        <div 
+          className="progress-bar-fill" 
+          style={{ width: `${(adsCount / MAX_ADS) * 100}%` }}
+        ></div>
       </div>
 
       {adsCount >= MAX_ADS && timeLeft && (
-        <p style={{fontSize: '14px', color: '#fbc531', marginBottom: '10px'}}>
-          ⏳ تفتح المهام الجديدة بعد: {timeLeft}
-        </p>
+        <div className="timer-box">
+          <p className="timer-text">المهمة القادمة تفتح خلال:</p>
+          <p className="timer-clock">{timeLeft}</p>
+        </div>
       )}
 
-      <button onClick={handleWatchAd} disabled={adsCount >= MAX_ADS || isLoading} style={{ width: '100%', padding: '15px', background: 'var(--primary)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: 'bold' }}>
-        {isLoading ? '⏳ انتظر...' : adsCount >= MAX_ADS ? '✅ اكتملت اليوم' : '📺 شاهد الإعلان'}
+      <button 
+        className={`watch-btn ${adsCount >= MAX_ADS ? 'disabled' : ''}`}
+        onClick={handleWatchAd} 
+        disabled={adsCount >= MAX_ADS || isLoading}
+      >
+        {isLoading ? '⏳ جاري المعالجة...' : adsCount >= MAX_ADS ? '✅ اكتملت المهام' : '📺 شاهد واربح (+1)'}
       </button>
       
-      {notification && <p style={{fontSize:'12px', marginTop:'10px', color: '#a29bfe'}}>{notification}</p>}
+      {notification && <p className="status-message">{notification}</p>}
     </div>
   )
 }
