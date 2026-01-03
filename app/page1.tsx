@@ -89,7 +89,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     const adsgram = (window as any).Adsgram;
     if (adsgram) {
       setNotification('📺 جاري تحضير الإعلان...');
-      const AdController = adsgram.init({ blockId: "20475", debug: true }); 
+      const AdController = adsgram.init({ blockId: "20475", debug: false }); 
       
       AdController.show()
         .then((result: any) => {
