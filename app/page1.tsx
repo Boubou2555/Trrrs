@@ -44,6 +44,26 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     }
   }, [calculateTime])
 
+  // وظيفة جلب إعلان Monetag في حال فشل Adsgram
+  const handleMonetagFallback = () => {
+    const showMonetagAd = (window as any).show_10400479;
+    if (showMonetagAd) {
+      setNotification('📺 جاري محضير إعلان بديل...');
+      showMonetagAd()
+        .then(() => {
+          setNotification('✅ أحسنت! جاري تحديث بياناتك...');
+          processReward();
+        })
+        .catch(() => {
+          setIsLoading(false);
+          setNotification('❌ خطأ في تحميل الإعلان البديل أيضاً');
+        });
+    } else {
+      setIsLoading(false);
+      setNotification('❌ لم يتم العثور على مشغل الإعلانات');
+    }
+  };
+
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading) return;
     setIsLoading(true);
@@ -64,9 +84,13 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
           }
         })
         .catch(() => { 
-          setIsLoading(false); 
-          setNotification(`❌ خطأ: تأكد من عدم وجود AdBlock`); 
+          // بدلاً من إظهار رسالة الخطأ مباشرة، نقوم باستدعاء Monetag
+          console.log("Adsgram failed, switching to Monetag...");
+          handleMonetagFallback();
         });
+    } else {
+        // إذا لم يكن Adsgram موجوداً أصلاً
+        handleMonetagFallback();
     }
   };
 
@@ -94,7 +118,6 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{adsCount} / {MAX_ADS}</span>
       </div>
       
-      {/* Progress Bar */}
       <div style={{ width: '100%', height: '12px', background: '#1a1a1a', borderRadius: '6px', marginBottom: '25px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
         <div style={{ width: `${(adsCount / MAX_ADS) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #6c5ce7, #a29bfe)', transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
       </div>
