@@ -193,9 +193,9 @@ export default function Home() {
         {activeTab === 'products' && (
           <div className="products-grid">
             {[
-              { id: 1, title: "130 Coins Pes", price: 999, img: "https://c2c.fp3.guinfra.com/file/6930febd0edd36f87c3190adEFDdxa6w03?fop=imageView/2/w/340/h/340" },
-              { id: 2, title: "100+10 Diamonds", price: 999, img: "https://cdn.bynogame.com/news/1675333606607.webp" },
-              { id: 4, title: "100 DA Flexy", price: 999, img: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png" }
+              { id: 1, title: "130 Coins Pes", price: 2500, img: "https://c2c.fp3.guinfra.com/file/6930febd0edd36f87c3190adEFDdxa6w03?fop=imageView/2/w/340/h/340" },
+              { id: 2, title: "100+10 Diamonds", price: 2300, img: "https://cdn.bynogame.com/news/1675333606607.webp" },
+              { id: 4, title: "Flixy 100 DA", price: 2000, img: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png" }
             ].map(p => (
               <div key={p.id} className="product-card" onClick={async () => {
                 const tg = (window as any).Telegram?.WebApp;
