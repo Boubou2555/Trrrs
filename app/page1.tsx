@@ -5,7 +5,7 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   const [user, setUser] = useState<any>(null)
   const [adsCount, setAdsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-  const [isInitialLoading, setIsInitialLoading] = useState(true) // حالة جديدة للتحميل الأولي
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [notification, setNotification] = useState('')
   const [timeLeft, setTimeLeft] = useState('')
   const [lastAdDate, setLastAdDate] = useState<string | null>(null)
@@ -13,15 +13,45 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // وظيفة إطلاق الاحتفال (باستخدام مكتبة من رابط مباشر)
+  const fireConfetti = () => {
+    // استدعاء المكتبة من رابط خارجي لتعمل على الموبايل بدون npm install
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+    script.onload = () => {
+      const confetti = (window as any).confetti;
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        zIndex: 9999
+      });
+    };
+    document.body.appendChild(script);
+  };
+
+  const playSuccessSound = () => {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+    audio.play().catch(e => console.log("Sound play failed", e));
+  };
+
+  const triggerHaptic = (type: 'success' | 'warning' | 'error' | 'light') => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg?.HapticFeedback) {
+      if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+      else if (type === 'warning') tg.HapticFeedback.notificationOccurred('warning');
+      else if (type === 'error') tg.HapticFeedback.notificationOccurred('error');
+      else tg.HapticFeedback.impactOccurred('light');
+    }
+  };
+
   const startCountdown = useCallback((dateStr: string) => {
     if (timerRef.current) clearInterval(timerRef.current);
-
     const updateTimer = () => {
       const lastDate = new Date(dateStr).getTime();
       const nextDate = lastDate + (24 * 60 * 60 * 1000); 
       const now = new Date().getTime();
       const diff = nextDate - now;
-
       if (diff > 0) {
         const h = Math.floor(diff / (1000 * 60 * 60));
         const m = Math.floor((diff / (1000 * 60)) % 60);
@@ -32,7 +62,6 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         if (timerRef.current) clearInterval(timerRef.current);
       }
     };
-
     updateTimer();
     timerRef.current = setInterval(updateTimer, 1000);
   }, []);
@@ -52,61 +81,37 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
             }
           }
         })
-        .finally(() => {
-          setIsInitialLoading(false); // انتهاء جلب البيانات
-        });
+        .finally(() => setIsInitialLoading(false));
     } else {
       setIsInitialLoading(false);
     }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); }
   }, [startCountdown])
-
-  const handleMonetagFallback = () => {
-    const showMonetagAd = (window as any).show_10400479;
-    if (showMonetagAd) {
-      setNotification('📺 جاري تحضير إعلان بديل...');
-      showMonetagAd()
-        .then(() => {
-          setNotification('✅ أحسنت! جاري تحديث بياناتك...');
-          processReward();
-        })
-        .catch(() => {
-          setIsLoading(false);
-          setNotification('❌ خطأ في تحميل الإعلان البديل أيضاً');
-        });
-    } else {
-      setIsLoading(false);
-      setNotification('❌ لم يتم العثور على مشغل الإعلانات');
-    }
-  };
 
   const handleWatchAd = async () => {
     if (!user || adsCount >= MAX_ADS || isLoading || isInitialLoading) return;
+    triggerHaptic('light');
     setIsLoading(true);
 
     const adsgram = (window as any).Adsgram;
     if (adsgram) {
       setNotification('📺 جاري تحضير الإعلان...');
-      const AdController = adsgram.init({ blockId: "20471", debug: false }); 
-      
+      const AdController = adsgram.init({ blockId: "20475", debug: false }); 
       AdController.show()
         .then((result: any) => {
           if (result.done) { 
-            setNotification('✅ أحسنت! جاري تحديث بياناتك...');
             processReward();
           } else {
             setIsLoading(false);
+            triggerHaptic('warning');
             setNotification('⚠️ يجب مشاهدة الإعلان كاملاً');
           }
         })
         .catch(() => { 
-          handleMonetagFallback();
+          triggerHaptic('error');
+          setIsLoading(false);
+          setNotification('❌ تعذر تحميل الإعلان');
         });
-    } else {
-        handleMonetagFallback();
     }
   };
 
@@ -119,8 +124,17 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
       });
       const data = await res.json();
       if (data.success) {
-        setAdsCount(data.newAdsCount);
+        const newCount = data.newAdsCount;
+        setAdsCount(newCount);
         onPointsUpdate(data.newPoints);
+        
+        playSuccessSound();
+        triggerHaptic('success');
+
+        if (newCount >= MAX_ADS) {
+          fireConfetti();
+        }
+
         if (data.lastAdDate) {
             setLastAdDate(data.lastAdDate);
             startCountdown(data.lastAdDate);
@@ -134,7 +148,6 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
     <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
         <span style={{ fontSize: '14px', color: '#ccc' }}>مهمة المشاهدة اليومية</span>
-        {/* إظهار علامة تحميل بسيطة حتى نعرف العدد الحقيقي */}
         <span style={{ fontWeight: 'bold', color: '#6c5ce7' }}>
           {isInitialLoading ? '...' : `${adsCount} / ${MAX_ADS}`}
         </span>
@@ -151,14 +164,13 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
 
       {adsCount >= MAX_ADS && !isInitialLoading && timeLeft && (
         <div style={{ background: 'rgba(255, 159, 67, 0.1)', padding: '12px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255, 159, 67, 0.2)' }}>
-          <p style={{ fontSize: '12px', color: '#ff9f43', margin: '0 0 5px 0' }}>انتظر حتى اليوم التالي للمشاهدة مرة أخرى</p>
+          <p style={{ fontSize: '12px', color: '#ff9f43', margin: '0 0 5px 0' }}>انتظر حتى الغد للمشاهدة مرة أخرى</p>
           <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff', margin: 0 }}>{timeLeft}</p>
         </div>
       )}
 
       <button 
         onClick={handleWatchAd} 
-        // الزر يكون معطلاً طوال فترة التحميل الأولي
         disabled={isInitialLoading || adsCount >= MAX_ADS || isLoading} 
         style={{ 
           width: '100%', padding: '18px', 
@@ -166,7 +178,8 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
           border: 'none', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '16px',
           cursor: (isInitialLoading || adsCount >= MAX_ADS || isLoading) ? 'not-allowed' : 'pointer',
           boxShadow: (isInitialLoading || adsCount >= MAX_ADS) ? 'none' : '0 10px 20px rgba(108, 92, 231, 0.3)',
-          transition: 'all 0.2s ease'
+          transition: 'all 0.2s ease',
+          transform: isLoading ? 'scale(0.98)' : 'scale(1)'
         }}
       >
         {isInitialLoading ? '⏳ جاري التحقق...' : (isLoading ? '⏳ انتظر قليلاً...' : (adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : '📺 مشاهدة إعلان (+1 نقطة)'))}
