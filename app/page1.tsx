@@ -13,26 +13,19 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // وظيفة إطلاق الاحتفال (باستخدام مكتبة من رابط مباشر)
   const fireConfetti = () => {
-    // استدعاء المكتبة من رابط خارجي لتعمل على الموبايل بدون npm install
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
     script.onload = () => {
       const confetti = (window as any).confetti;
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        zIndex: 9999
-      });
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
     };
     document.body.appendChild(script);
   };
 
   const playSuccessSound = () => {
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
-    audio.play().catch(e => console.log("Sound play failed", e));
+    audio.play().catch(e => console.log("Sound failed", e));
   };
 
   const triggerHaptic = (type: 'success' | 'warning' | 'error' | 'light') => {
@@ -127,14 +120,9 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         const newCount = data.newAdsCount;
         setAdsCount(newCount);
         onPointsUpdate(data.newPoints);
-        
         playSuccessSound();
         triggerHaptic('success');
-
-        if (newCount >= MAX_ADS) {
-          fireConfetti();
-        }
-
+        if (newCount >= MAX_ADS) fireConfetti();
         if (data.lastAdDate) {
             setLastAdDate(data.lastAdDate);
             startCountdown(data.lastAdDate);
@@ -146,6 +134,23 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
 
   return (
     <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+      {/* ستايل مدمج للأنيميشن */}
+      <style>{`
+        @keyframes shake {
+          0% { transform: rotate(0deg); }
+          25% { transform: rotate(5deg); }
+          50% { transform: rotate(0eg); }
+          75% { transform: rotate(-5deg); }
+          100% { transform: rotate(0deg); }
+        }
+        .gift-box {
+          font-size: 50px;
+          cursor: pointer;
+          display: inline-block;
+          animation: shake 0.5s infinite;
+        }
+      `}</style>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
         <span style={{ fontSize: '14px', color: '#ccc' }}>مهمة المشاهدة اليومية</span>
         <span style={{ fontWeight: 'bold', color: '#6c5ce7' }}>
@@ -162,28 +167,33 @@ export default function Page1({ onPointsUpdate }: { onPointsUpdate: (points: num
         }}></div>
       </div>
 
-      {adsCount >= MAX_ADS && !isInitialLoading && timeLeft && (
-        <div style={{ background: 'rgba(255, 159, 67, 0.1)', padding: '12px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255, 159, 67, 0.2)' }}>
-          <p style={{ fontSize: '12px', color: '#ff9f43', margin: '0 0 5px 0' }}>انتظر حتى الغد للمشاهدة مرة أخرى</p>
-          <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff', margin: 0 }}>{timeLeft}</p>
+      {adsCount >= MAX_ADS && !isInitialLoading ? (
+        <div style={{ padding: '20px' }}>
+          <div className="gift-box" onClick={() => { fireConfetti(); triggerHaptic('success'); }}>🎁</div>
+          <p style={{ color: '#fff', fontWeight: 'bold', marginTop: '10px' }}>لقد حصلت على جميع مكافآت اليوم!</p>
+          {timeLeft && (
+            <div style={{ background: 'rgba(255, 159, 67, 0.1)', padding: '10px', borderRadius: '12px', marginTop: '10px' }}>
+               <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff9f43', margin: 0 }}>{timeLeft}</p>
+            </div>
+          )}
         </div>
+      ) : (
+        <button 
+          onClick={handleWatchAd} 
+          disabled={isInitialLoading || isLoading} 
+          style={{ 
+            width: '100%', padding: '18px', 
+            background: 'linear-gradient(135deg, #6c5ce7, #8e44ad)', 
+            border: 'none', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '16px',
+            cursor: (isInitialLoading || isLoading) ? 'not-allowed' : 'pointer',
+            boxShadow: '0 10px 20px rgba(108, 92, 231, 0.3)',
+            transition: 'all 0.2s ease',
+            transform: isLoading ? 'scale(0.98)' : 'scale(1)'
+          }}
+        >
+          {isInitialLoading ? '⏳ جاري التحقق...' : (isLoading ? '⏳ انتظر قليلاً...' : '📺 مشاهدة إعلان (+1 نقطة)')}
+        </button>
       )}
-
-      <button 
-        onClick={handleWatchAd} 
-        disabled={isInitialLoading || adsCount >= MAX_ADS || isLoading} 
-        style={{ 
-          width: '100%', padding: '18px', 
-          background: (isInitialLoading || adsCount >= MAX_ADS) ? '#2d3436' : 'linear-gradient(135deg, #6c5ce7, #8e44ad)', 
-          border: 'none', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '16px',
-          cursor: (isInitialLoading || adsCount >= MAX_ADS || isLoading) ? 'not-allowed' : 'pointer',
-          boxShadow: (isInitialLoading || adsCount >= MAX_ADS) ? 'none' : '0 10px 20px rgba(108, 92, 231, 0.3)',
-          transition: 'all 0.2s ease',
-          transform: isLoading ? 'scale(0.98)' : 'scale(1)'
-        }}
-      >
-        {isInitialLoading ? '⏳ جاري التحقق...' : (isLoading ? '⏳ انتظر قليلاً...' : (adsCount >= MAX_ADS ? '✅ اكتملت مهام اليوم' : '📺 مشاهدة إعلان (+1 نقطة)'))}
-      </button>
       
       {notification && <p style={{ fontSize: '13px', marginTop: '15px', color: '#a29bfe', fontWeight: '500' }}>{notification}</p>}
     </div>
