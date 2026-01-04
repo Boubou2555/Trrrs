@@ -1,300 +1,137 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import dynamic from 'next/dynamic'
-import './styles.css' // تأكد من أن ملف الـ CSS الذي أرسلته لي محفوظ بهذا الاسم
 
-// استيراد صفحة المهام بشكل ديناميكي لضمان عمل الـ Confetti والـ Adsgram
-const Page1 = dynamic(() => import('./page1'), { 
-  ssr: false,
-  loading: () => <div style={{padding: '20px', textAlign: 'center', color: 'var(--primary-light)'}}>جاري تحميل المهام...</div>
-})
+// تعريف الـ Props ليتوافق مع TypeScript
+interface Page1Props {
+  onPointsUpdate: (points: number) => void;
+}
 
-const ADMIN_ID = 5149849049;
-
-export default function Home() {
+export default function Page1({ onPointsUpdate }: Page1Props) {
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'products' | 'tasks' | 'history' | 'admin'>('products')
-  const [history, setHistory] = useState<any[]>([])
-  const [notifs, setNotifs] = useState<any[]>([]) 
-  const [showNotif, setShowNotif] = useState(false)
-  const [adminData, setAdminData] = useState({ orders: [], users: [] })
-  const [tabLoading, setTabLoading] = useState(false)
+  const [adsCount, setAdsCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [timeLeft, setTimeLeft] = useState('')
+  const MAX_ADS = 10 
+  
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isFetching = useRef(false);
-
-  // وظيفة الاهتزاز (Haptic Feedback)
-  const triggerHaptic = (type: 'light' | 'medium' | 'success' | 'warning' | 'error') => {
-    const tg = (window as any).Telegram?.WebApp;
-    if (tg?.HapticFeedback) {
-      if (type === 'success' || type === 'warning' || type === 'error') {
-        tg.HapticFeedback.notificationOccurred(type);
-      } else {
-        tg.HapticFeedback.impactOccurred(type);
+  const fireConfetti = () => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+    script.onload = () => {
+      const confetti = (window as any).confetti;
+      if (confetti) {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
       }
-    }
+    };
+    document.body.appendChild(script);
   };
 
-  const refreshData = useCallback(async (isInitial = false) => {
-    if (!user?.id || user.isBanned || isFetching.current) return;
-    if (isInitial) setTabLoading(true);
-    
-    isFetching.current = true;
-    try {
-      const res = await fetch(`/api/increase-points?telegramId=${user.id}`);
-      const d = await res.json();
-      
-      if (d.success) {
-        setHistory(d.history || []);
-        setNotifs(d.notifs || []);
-        setUser((prev: any) => prev ? { ...prev, points: d.points ?? prev.points } : null);
+  const startCountdown = useCallback((dateStr: string) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    const updateTimer = () => {
+      const lastDate = new Date(dateStr).getTime();
+      const nextDate = lastDate + (24 * 60 * 60 * 1000); 
+      const now = new Date().getTime();
+      const diff = nextDate - now;
+      if (diff > 0) {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
+      } else {
+        setTimeLeft('');
+        if (timerRef.current) clearInterval(timerRef.current);
       }
-    } catch (e) { 
-      console.error("Refresh Error:", e);
-    } finally { 
-      isFetching.current = false;
-      setTabLoading(false); 
-    }
-  }, [user?.id, user?.isBanned]);
+    };
+    updateTimer();
+    timerRef.current = setInterval(updateTimer, 1000);
+  }, []);
 
   useEffect(() => {
-    if (user?.id && !user.isBanned) {
-      const interval = setInterval(refreshData, 8000); 
-      return () => clearInterval(interval);
-    }
-  }, [user?.id, user?.isBanned, refreshData]);
-
-  useEffect(() => {
-    const tg = (window as any).Telegram?.WebApp;
-    tg?.expand(); 
-    
+    const tg = (window as any).Telegram?.WebApp
     if (tg?.initDataUnsafe?.user) {
       const u = tg.initDataUnsafe.user;
-      fetch('/api/increase-points', { 
-        method: 'POST', 
-        body: JSON.stringify({...u, action: 'login_check'}) 
-      })
-      .then(r => r.json()).then(data => {
-        setUser({ 
-          ...u, 
-          points: data.points || 0, 
-          isBanned: data.user?.status === 1, 
-          reason: data.user?.banReason 
-        });
-        setLoading(false);
-      });
-    } else { 
-      setLoading(false); 
+      setUser(u)
+      fetch(`/api/increase-points?telegramId=${u.id}`)
+        .then(res => res.json())
+        .then(data => { 
+          if (data.success) {
+            setAdsCount(data.user?.adsCount || 0)
+            if (data.user?.lastAdDate) startCountdown(data.user.lastAdDate);
+          }
+        })
+        .finally(() => setIsInitialLoading(false));
     }
-  }, [])
+    return () => { if (timerRef.current) clearInterval(timerRef.current); }
+  }, [startCountdown])
 
-  useEffect(() => {
-    if (activeTab === 'history') refreshData(true);
-    if (activeTab === 'admin' && user?.id === ADMIN_ID) loadAdminData();
-  }, [activeTab, user?.id, refreshData])
+  const handleWatchAd = async () => {
+    if (!user || adsCount >= MAX_ADS || isLoading) return;
+    setIsLoading(true);
 
-  const loadAdminData = async () => {
-    setTabLoading(true);
-    try {
-      const res = await fetch(`/api/increase-points?adminId=${ADMIN_ID}`);
-      const data = await res.json();
-      setAdminData({ orders: data.orders || [], users: data.users || [] });
-    } finally { setTabLoading(false); }
-  }
-
-  const adminDo = async (payload: any) => {
-    try {
-      const res = await fetch('/api/increase-points', { 
-        method: 'POST', 
-        body: JSON.stringify({ ...payload, adminId: ADMIN_ID }) 
-      });
-      const data = await res.json();
-      if (data.success) {
-        triggerHaptic('success');
-        refreshData(); 
-        if (activeTab === 'admin') loadAdminData();
-      }
-      return data;
-    } catch (e) { console.error(e); }
-  }
-
-  const handleTabChange = (tab: any) => {
-    if (activeTab !== tab) {
-      triggerHaptic('light');
-      setActiveTab(tab);
+    const adsgram = (window as any).Adsgram;
+    if (adsgram) {
+      const AdController = adsgram.init({ blockId: "20475" }); 
+      AdController.show()
+        .then(async (result: any) => {
+          if (result.done) { 
+            const res = await fetch('/api/increase-points', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ telegramId: user.id, action: 'watch_ad' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              setAdsCount(data.newAdsCount);
+              onPointsUpdate(data.newPoints); // إرسال النقاط الجديدة للملف الرئيسي
+              if (data.newAdsCount >= MAX_ADS) fireConfetti();
+            }
+          }
+        })
+        .catch(() => {
+            const tg = (window as any).Telegram?.WebApp;
+            tg?.showAlert("فشل تحميل الإعلان، حاول لاحقاً.");
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+        setIsLoading(false);
+        const tg = (window as any).Telegram?.WebApp;
+        tg?.showAlert("خدمة الإعلانات غير متوفرة حالياً.");
     }
   };
 
-  if (loading) return <div className="loading-spinner"></div>
-  
-  if (user?.isBanned) return (
-    <div className="main-container" style={{textAlign:'center', paddingTop:'100px'}}>
-      <div style={{fontSize:'80px'}}>🚫</div>
-      <h2 style={{color:'var(--danger)'}}>عذراً، أنت محظور!</h2>
-      <p style={{marginTop:'15px'}}>السبب: {user.reason || "مخالفة القوانين"}</p>
-    </div>
-  )
-
-  const unread = notifs.filter((n: any) => !n.isRead).length;
+  if (isInitialLoading) return <div style={{textAlign:'center', padding:'20px'}}>جاري التحميل...</div>
 
   return (
-    <div className="main-container">
-      {/* رأس الصفحة - الهيدر المعدل بناءً على الصورة */}
-      <div className="user-header">
-        <div className="header-left">
-          <img src={user?.photo_url || 'https://i.postimg.cc/zv3hrNct/1765456939666.jpg'} className="user-avatar" alt="" />
-          <div>
-            <div style={{fontWeight:700, fontSize:'1rem'}}>{user?.first_name}</div>
-            <div style={{fontSize:'0.7rem', opacity:0.6}}>@{user?.username || 'user'}</div>
-          </div>
-        </div>
-        <div className="header-right">
-          <div className="header-balance">XP {user?.points}</div>
-          <div className="notif-bell-wrapper" onClick={() => {
-            triggerHaptic('medium');
-            setShowNotif(true); 
-            if(unread > 0) adminDo({action:'read_notifs', telegramId:user.id});
-          }}>
-            🔔 {unread > 0 && <span className="red-dot"></span>}
-          </div>
-        </div>
-      </div>
-
-      {/* صندوق الإشعارات */}
-      {showNotif && (
-        <div className="notif-box">
-          <div className="notif-header">
-            <b>🔔 الإشعارات</b>
-            <span onClick={() => setShowNotif(false)} style={{cursor:'pointer', fontSize:'1.2rem'}}>✖</span>
-          </div>
-          {notifs.length === 0 ? (
-            <p style={{padding:'20px', textAlign:'center', opacity:0.5}}>لا توجد إشعارات حالياً</p>
-          ) : notifs.map((n: any) => (
-            <div key={n.id} className="notif-item">
-              <img src={n.iconUrl || 'https://i.postimg.cc/zv3hrNct/1765456939666.jpg'} className="notif-img" alt="" />
-              <div>
-                <b>{n.title}</b>
-                <p style={{fontSize:'0.8rem', opacity:0.7}}>{n.message}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* قائمة التبويبات */}
-      <div className="tabs-container" style={{ display: 'grid', gridTemplateColumns: user?.id === ADMIN_ID ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)' }}>
-        <button onClick={()=>handleTabChange('products')} className={activeTab==='products'?'tab-button active':'tab-button'}>المنتجات</button>
-        <button onClick={()=>handleTabChange('tasks')} className={activeTab==='tasks'?'tab-button active':'tab-button'}>المهام</button>
-        <button onClick={()=>handleTabChange('history')} className={activeTab==='history'?'tab-button active':'tab-button'}>السجل</button>
-        {user?.id === ADMIN_ID && <button onClick={()=>handleTabChange('admin')} className={activeTab==='admin'?'tab-button active':'tab-button'}>إدارة</button>}
-      </div>
-
-      <div className="content">
-        {/* تبويب المنتجات */}
-        {activeTab === 'products' && (
-          <div className="products-grid">
-            {[
-              { id: 1, title: "Coins Pes 130", price: 2500, img: "https://c2c.fp3.guinfra.com/file/6930febd0edd36f87c3190adEFDdxa6w03?fop=imageView/2/w/340/h/340" },
-              { id: 2, title: "Diamonds FF 110", price: 2300, img: "https://cdn.bynogame.com/news/1675333606607.webp" },
-              { id: 4, title: "DA Flexy 100", price: 2000, img: "https://i.postimg.cc/9Q1p2w1R/New-Project-40-90-F0-A70.png" }
-            ].map(p => (
-              <div key={p.id} className="product-card" onClick={() => {
-                triggerHaptic('medium');
-                const tg = (window as any).Telegram?.WebApp;
-                if (user.points < p.price) return tg?.showAlert('رصيدك غير كافٍ لهذا المنتج!');
-                tg?.showConfirm(`تأكيد طلب ${p.title}؟ سيتم خصم ${p.price} XP`, (ok:any) => {
-                  if(ok) {
-                    adminDo({action:'purchase_product', telegramId:user.id, price:p.price, productTitle:p.title});
-                    tg?.showAlert('تم إرسال طلبك للإدارة بنجاح!');
-                  }
-                })
-              }}>
-                <img src={p.img} className="product-image" alt="" />
-                <div style={{padding:'10px', textAlign:'center'}}>
-                   <div style={{fontSize:'0.85rem', fontWeight:700, marginBottom:'4px'}}>{p.title}</div>
-                   <div style={{color:'var(--primary-light)', fontSize:'0.85rem', fontWeight:'bold'}}>{p.price} XP</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* تبويب المهام (صفحة Page1) */}
-        {activeTab === 'tasks' && <Page1 onPointsUpdate={(pts) => setUser((prev:any) => ({...prev, points: pts}))} />}
-
-        {/* تبويب السجل */}
-        {activeTab === 'history' && (
-          <div className="history-list">
-            {tabLoading ? (
-                <div style={{textAlign:'center', padding:'20px', color:'var(--primary-light)'}}>جاري جلب البيانات...</div>
-            ) : history.length === 0 ? (
-                <p style={{textAlign:'center', opacity:0.5, marginTop:'20px'}}>لا توجد عمليات مسجلة</p>
-            ) : history.map((h: any) => (
-              <div key={h.id} className="history-item">
-                <div style={{display:'flex', flexDirection:'column', gap:'4px'}}>
-                  <div style={{fontSize:'0.9rem', fontWeight:600}}>{h.description}</div>
-                  <span className={`status-text status-${h.status || 'pending'}`}>
-                    {h.status === 'completed' ? 'تم الإرسال ✅' : h.status === 'rejected' ? 'مرفوض ❌' : 'قيد المراجعة ⏳'}
-                  </span>
-                  <small style={{opacity:0.4, fontSize:'0.7rem'}}>{new Date(h.createdAt).toLocaleString('ar-EG')}</small>
-                </div>
-                <div style={{fontSize:'1rem', fontWeight:'bold'}} className={h.amount > 0 ? 'plus' : 'minus'}>
-                  {h.amount > 0 ? `+${h.amount}` : h.amount} XP
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* تبويب الإدارة */}
-        {activeTab === 'admin' && user?.id === ADMIN_ID && (
-          <div className="admin-section">
-            {tabLoading ? (
-                <div className="loading-spinner" style={{margin:'20px auto'}}></div>
-            ) : (
-              <>
-                <h4 style={{margin:'10px 0', fontSize:'0.9rem'}}>📦 الطلبات الجديدة ({adminData.orders.length})</h4>
-                {adminData.orders.length === 0 ? <p style={{opacity:0.5, fontSize:'0.8rem'}}>كل شيء نظيف! لا طلبات حالياً.</p> : adminData.orders.map((o:any) => (
-                  <div key={o.id} className="admin-card">
-                    <div style={{fontSize:'0.85rem', marginBottom:'10px'}}>
-                      <b>👤 {o.user?.firstName} (@{o.user?.username})</b>
-                      <div style={{marginTop:'5px', color:'var(--primary-light)'}}>🛒 {o.description}</div>
-                    </div>
-                    <div className="admin-btns">
-                      <button className="btn-mini" style={{background:'var(--success)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'completed', telegramId: o.telegramId})}>قبول</button>
-                      <button className="btn-mini" style={{background:'var(--danger)', flex:1}} onClick={() => adminDo({action:'update_order', transactionId:o.id, status:'rejected', telegramId: o.telegramId})}>رفض</button>
-                    </div>
-                  </div>
-                ))}
-                
-                <h4 style={{margin:'20px 0 10px 0', fontSize:'0.9rem'}}>👥 المستخدمين</h4>
-                <div className="admin-card" style={{padding:'5px'}}>
-                  {adminData.users.slice(0, 50).map((u:any) => (
-                    <div key={u.id} className="user-row" style={{padding:'10px'}}>
-                      <div>
-                        <div style={{fontSize:'0.85rem', fontWeight:600}}>{u.firstName}</div>
-                        <small style={{color:'var(--primary-light)'}}>{u.points} XP</small>
-                      </div>
-                      <div className="admin-btns">
-                        <button className="btn-mini" style={{background:'var(--primary)'}} onClick={() => {const a=prompt('القيمة (+ أو -)'); a && adminDo({action:'manage_points', telegramId:u.telegramId, amount:a})}}>💰</button>
-                        <button className="btn-mini" style={{background:'var(--bg-darker)', border:'1px solid var(--danger)'}} onClick={() => {
-                          const st = u.status === 1 ? 'unban' : 'ban';
-                          adminDo({action:'toggle_ban', telegramId:u.telegramId, status: st, reason: st==='ban'?'مخالفة':''});
-                        }}>{u.status === 1 ? '🔓' : '🔨'}</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+    <div style={{ padding: '20px', textAlign: 'center', background: 'var(--card)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <span style={{fontSize:'0.9rem'}}>المهمة اليومية (مشاهدة)</span>
+        <span style={{ fontWeight: 'bold', color: 'var(--primary-light)' }}>{adsCount}/{MAX_ADS}</span>
       </div>
       
-      <div style={{textAlign:'center', padding:'30px 20px', opacity:0.3, fontSize:'0.65rem', letterSpacing:'1px'}}>
-        BORHANE MINI APP v2.0 • 2026
+      <div style={{ width: '100%', height: '8px', background: '#000', borderRadius: '10px', marginBottom: '20px', overflow: 'hidden' }}>
+        <div style={{ width: `${(adsCount / MAX_ADS) * 100}%`, height: '100%', background: 'var(--primary)', transition: '0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
       </div>
+
+      {adsCount >= MAX_ADS ? (
+        <div style={{padding:'10px'}}>
+          <div style={{fontSize: '40px', marginBottom:'10px'}}>✅</div>
+          <p style={{fontSize:'0.85rem'}}>لقد أكملت جميع مهام اليوم!</p>
+          <p style={{fontSize:'0.8rem', color:'var(--primary-light)', marginTop:'5px'}}>تفتح المهمة التالية بعد: {timeLeft}</p>
+        </div>
+      ) : (
+        <button 
+          onClick={handleWatchAd} 
+          disabled={isLoading}
+          className="tab-button active"
+          style={{ width: '100%', padding: '15px', border: 'none', borderRadius: '12px', color: 'white', fontWeight: 'bold', fontSize:'0.9rem', cursor: isLoading ? 'default' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
+          {isLoading ? 'جاري التحميل...' : 'مشاهدة إعلان (+1 XP)'}
+        </button>
+      )}
     </div>
   )
 }
